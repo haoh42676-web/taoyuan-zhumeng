@@ -95,6 +95,10 @@ dialog { padding: 0; border: 0; background: transparent; }.buy-dialog::backdrop,
 .fact-image { width: 100%; height: 62px; margin-bottom: 12px; border-radius: 8px; object-fit: cover; }
 .fact > div:last-child { margin-top: auto; }
 .fact-badge { width: fit-content; margin-bottom: 10px; padding: 4px 8px; border-radius: 6px; background: var(--yellow); color: var(--forest-deep); font-size: 11px; font-weight: 800; }
+.product-photo-visual { display: block; isolation: isolate; background: var(--mist); }
+.product-photo-visual::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, oklch(0 0 0 / .18), transparent 45%, oklch(0 0 0 / .08)); pointer-events: none; }
+.product-image { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.product-photo-visual .product-tag { z-index: 2; }
 .trace-card .trace-step { animation: none; }
 .trace-card.is-visible .trace-step { animation: traceStepIn .56s ease-out both; }
 .trace-card.is-visible .trace-step:nth-child(1) { animation-delay: 0ms; }
