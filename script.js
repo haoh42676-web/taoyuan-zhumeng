@@ -71,8 +71,27 @@ mobileMenu?.querySelectorAll('a').forEach((link) => link.addEventListener('click
   menuButton.setAttribute('aria-expanded', 'false');
 }));
 
+const traceCard = document.querySelector('[data-trace-card]');
+if (traceCard && 'IntersectionObserver' in window) {
+  const traceObserver = new IntersectionObserver((entries, observer) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      traceCard.classList.add('is-visible');
+      observer.disconnect();
+    }
+  }, { threshold: 0.28 });
+  traceObserver.observe(traceCard);
+} else {
+  traceCard?.classList.add('is-visible');
+}
+
+document.querySelector('[data-back-top]')?.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.currentTarget.blur();
+  window.scrollTo({ top: 0, behavior: 'auto' });
+  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+});
+
 // Clicking the dimmed backdrop closes native dialogs without extra UI.
 [buyDialog, socialDialog].forEach((dialog) => dialog?.addEventListener('click', (event) => {
   if (event.target === dialog) dialog.close();
 }));
-
