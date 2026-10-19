@@ -9530,10 +9530,10 @@
     "module": "social",
     "slug": "wechat",
     "data": {
-      "title": "微信咨询",
-      "image": "assets/wechat-contact.png",
-      "description": "二维码来自项目资料，实时账号状态请在对应应用确认。",
-      "sourceRef": "项目现有社交入口"
+      "title": "站内咨询",
+      "image": "assets/contact-safe.png",
+      "description": "个人联系二维码已移除，请使用本站商品咨询或售后表单联系运营。",
+      "sourceRef": "隐私复核：不公开个人账号或收款码"
     },
     "sort_order": 553
   },
@@ -9542,9 +9542,9 @@
     "slug": "douyin",
     "data": {
       "title": "抖音看果园",
-      "image": "assets/douyin.png",
-      "description": "二维码来自项目资料，实时账号状态请在对应应用确认。",
-      "sourceRef": "项目现有社交入口"
+      "image": "assets/contact-safe.png",
+      "description": "个人联系二维码已移除，请使用本站商品咨询或售后表单联系运营。",
+      "sourceRef": "隐私复核：不公开个人账号或收款码"
     },
     "sort_order": 554
   },
@@ -9553,9 +9553,9 @@
     "slug": "xhs",
     "data": {
       "title": "小红书看礼盒",
-      "image": "assets/xiaohongshu.jpg",
-      "description": "二维码来自项目资料，实时账号状态请在对应应用确认。",
-      "sourceRef": "项目现有社交入口"
+      "image": "assets/contact-safe.png",
+      "description": "个人联系二维码已移除，请使用本站商品咨询或售后表单联系运营。",
+      "sourceRef": "隐私复核：不公开个人账号或收款码"
     },
     "sort_order": 555
   },
