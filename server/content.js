@@ -26,7 +26,7 @@ export async function seed(db){
 export async function withBatchAvailability(db,batches){const used=(await db.query(`SELECT data->>'batchId' batch_id,sum((data->>'quantity')::int) n FROM workflow_items WHERE kind='orders' AND data->>'status' IN ('confirmed','shipped','completed') GROUP BY data->>'batchId'`)).rows;return batches.map(b=>{const allocated=Number(used.find(x=>x.batch_id===b.id)?.n||0);return{...b,allocatedQuantity:allocated,availableQuantity:b.stock===null?null:Math.max(0,b.stock-allocated)};});}
 export async function published(db,module){const rows=(await db.query(`SELECT slug,published AS data FROM content_items WHERE module=$1 AND status!='archived' AND published IS NOT NULL ORDER BY sort_order,created_at`,[module])).rows.map(r=>({id:r.slug,...r.data}));return module==='batches'?withBatchAvailability(db,rows):rows;}
 export async function publicBootstrap(db){
-  const result=Object.fromEntries(Object.keys(MODULES).map(k=>[k,[]]));
+  const result=Object.fromEntries(Object.keys(MODULES).filter(k=>!MODULES[k].adminOnly).map(k=>[k,[]]));
   for(const row of (await db.query("SELECT module,slug,published FROM content_items WHERE status!='archived' AND published IS NOT NULL ORDER BY sort_order,created_at")).rows)if(Object.hasOwn(result,row.module))result[row.module].push({id:row.slug,...row.published});
   result.batches=await withBatchAvailability(db,result.batches);
   result.publications=(await db.query('SELECT id,title,body,source_refs,revision,created_at FROM publications WHERE active=true ORDER BY created_at DESC LIMIT 30')).rows.map(r=>({id:r.id,title:r.title,body:r.body,sourceRefs:r.source_refs,revision:r.revision,createdAt:r.created_at}));
