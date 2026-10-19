@@ -27,7 +27,7 @@ export function createApp(db,{production=false,secret=token(),appUrl='http://loc
   app.get('/runtime-config.js',(req,res)=>res.type('application/javascript').set('Cache-Control','no-store').send('window.PEACH_CONFIG = '+JSON.stringify({mode:'server',apiBase:'',adminPath:'/admin/'})+';'));
   app.use('/api',(req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
   app.use('/api',express.json({limit:'2mb'}));
-  app.use('/api',authMiddleware(db,{production,secret}));
+  app.use('/api',authMiddleware(db,{production,secret}));app.use('/api',async(req,res,next)=>{const controls=(await published(db,'feature_controls'))[0];const gate={'/consultations':'consultationEnabled','/service/claims':'claimEnabled','/tours/inquiries':'tourEnabled','/ops/tasks/current':'draftEnabled'}[req.path];if(controls&&gate&&!['GET','HEAD'].includes(req.method)&&controls[gate]===false)return next(Object.assign(Error(controls.pausedMessage||'此功能暂时暂停'),{status:403}));next();});
   app.use('/api',(req,res,next)=>{if(['GET','HEAD','OPTIONS'].includes(req.method))return next();try{const origin=req.headers.origin;const allowed=new URL(appUrl).origin;if(origin&&origin!==allowed&&!( !production&&['http://localhost:'+req.socket.localPort,'http://127.0.0.1:'+req.socket.localPort].includes(origin)))fail(403,'请求来源未获授权');if(req.headers['x-peach-request']!=='1')fail(403,'请从本站页面提交请求');next();}catch(e){next(e);}});
   const limiter=(max,windowMs=15*60000)=>rateLimit({windowMs,limit:max,standardHeaders:'draft-8',legacyHeaders:false,skip:()=>disableLimits,message:{error:{status:429,message:'操作过于频繁，请稍后重试'}}});
   app.use('/api/auth',authRouter(db,send,{production,loginLimiter:limiter(10)}));
@@ -69,7 +69,7 @@ export function createApp(db,{production=false,secret=token(),appUrl='http://loc
   app.use('/api',(req,res)=>fail(404,'接口或请求方法不存在'));
   app.use('/admin',express.static(resolve(ROOT,'admin'),{index:'index.html',dotfiles:'deny'}));
   app.use('/assets',express.static(resolve(ROOT,'assets'),{maxAge:'1d',dotfiles:'deny'}));
-  const publicFiles=new Set(['index.html','styles.css','interactions.css','source-data.js','project-data.js','api.js','remote-api.js','front-cms.js','analytics-client.js','app.js','BACKEND.md']);
+  const publicFiles=new Set(['index.html','styles.css','interactions.css','source-data.js','project-data.js','api.js','remote-api.js','front-cms.js','presentation-cms.js','analytics-client.js','app.js','BACKEND.md']);
   app.get('/',(req,res)=>res.sendFile(resolve(ROOT,'index.html')));
   app.get('/:file',(req,res,next)=>{if(!publicFiles.has(req.params.file))return next();res.sendFile(resolve(ROOT,req.params.file));});
   app.use((req,res)=>res.status(404).type('text/plain').send('页面不存在'));

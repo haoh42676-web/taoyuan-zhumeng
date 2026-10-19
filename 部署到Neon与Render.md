@@ -56,4 +56,4 @@
 - Render内置环境变量：<https://render.com/docs/environment-variables>
 - Render官方部署技能：<https://github.com/render-oss/skills/tree/main/skills/render-deploy>
 
-技能提供操作工作流，账号授权和实际服务验收仍是必需步骤。目前未创建云资源、未启用Render PostgreSQL。
+技能提供操作工作流，账号授权和实际服务验收仍是必需步骤。2026年10月19日已创建 Render 免费 Web Service 与 Neon 免费 PostgreSQL 项目，线上验收结果见《上线记录_20261019.md》；未创建 Render PostgreSQL。
