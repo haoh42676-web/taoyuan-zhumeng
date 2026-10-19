@@ -1,20 +1,9 @@
-# 桃源筑梦 · 上坪鹰嘴蜜桃
+# 数商桃乡 · 静态备份
 
-这是一个面向消费者的静态网站型验证原型，可直接部署到 GitHub Pages。
+备份日期：2026-10-19。GitHub Pages 运行静态前台，包含小桃满IP、事实数据、选购和本地业务演练。
 
-## 本地预览
+静态地址：https://haoh42676-web.github.io/taoyuan-zhumeng/
+正式网站：https://shushang-taoxiang.onrender.com/
+正式后台：https://shushang-taoxiang.onrender.com/admin/
 
-直接打开 `index.html` 即可预览。网站不依赖后端、构建工具或外部字体服务。
-
-## GitHub Pages
-
-1. 将本文件夹作为一个 GitHub 仓库上传。
-2. 在仓库设置中打开 **Pages**。
-3. Source 选择 `Deploy from a branch`，分支选择 `main`，目录选择 `/ (root)`。
-4. 保存后等待 GitHub Pages 发布。
-
-## 内容边界
-
-- 商品价格来自策划书中的参考规格，页面已标注“参考价”，实际批次、库存、运费与发货时间以咨询确认结果为准。
-- 购买通过静态二维码完成，不收集订单、不接入支付接口。
-- 页面不展示项目收入预测、投入预算或内部经营数据。
+此分支不包含服务器密钥、管理员密码、数据库、个人答卷及内部资料。演练记录仅保存于当前浏览器。服务端源码沿用 deploy/render-neon 分支。
