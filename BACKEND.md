@@ -88,3 +88,14 @@ CMS使用version，运营稿使用revision。兼容/ops/tasks/current新建每�
 ## 以后接入
 
 在线模型、支付/退款执行、原店铺同步、实时物流、社交消息和对象存储由服务端接入，保留人工审核及权限。当前未调用这些服务。密钥和连接串只放环境变量。用户延期云部署；Render配置只有网页服务，数据库用Neon，不创建Render PostgreSQL。
+
+
+## 2026-10-20 智能辅助接口
+
+POST /api/ai/chat：已发布事实的规则回答；本人咨询关联订单的登记物流。
+POST /api/ai/recommendations：场景与本机偏好的规则推荐，不保存浏览偏好。
+POST /api/admin/ai/descriptions：管理员、运营、编辑生成文案，需要CSRF；保存走原有草稿接口。
+GET /api/admin/ai/dashboard?start=YYYY-MM-DD&end=YYYY-MM-DD：管理员、运营、只读查看匿名汇总，最多93天。
+ai_settings：后台配置并发布开关、提示语、推荐数量与库存阈值。
+
+当前 provider=rules，未调用外部模型。业务数据来自数据库，示例图表仅在浏览器生成。详细口径见AI功能说明与截图文件夹。

@@ -1,9 +1,8 @@
 # 数商桃乡 · 静态备份
 
-备份日期：2026-10-19。GitHub Pages 运行静态前台，包含小桃满IP、事实数据、选购和本地业务演练。
+更新日期：2026-10-20。包含规则客服、可解释推荐及本地业务演练。
 
-静态地址：https://haoh42676-web.github.io/taoyuan-zhumeng/
 正式网站：https://shushang-taoxiang.onrender.com/
 正式后台：https://shushang-taoxiang.onrender.com/admin/
 
-此分支不包含服务器密钥、管理员密码、数据库、个人答卷及内部资料。演练记录仅保存于当前浏览器。服务端源码沿用 deploy/render-neon 分支。
+此分支不包含服务器、密钥、数据库、管理员密码或内部资料。静态后台入口链接至正式后台，文案生成与数据看板请在正式后台使用。
