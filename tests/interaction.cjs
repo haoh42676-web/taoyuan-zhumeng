@@ -48,7 +48,7 @@ const ok=message=>{checks.push(message);console.log('PASS',message);};
  await go('consumer');
  for(const [scene,n] of [['family',2],['gift',2],['group',1]]){await p.locator('[data-scenario="'+scene+'"]').click();assert.equal(await p.locator('.product-card').count(),n);}
  await p.locator('[data-filter="all"]').click();assert.equal(await p.locator('.product-card').count(),5);
- for(const id of ['fresh-5','fresh-2','gift-12','gift-max','group-8']){await p.locator('[data-action="product"][data-value="'+id+'"]').click();assert.match(await dialog().innerText(),/配送费/);await close();}
+ for(const id of ['fresh-5','fresh-2','gift-12','gift-max','group-8']){await p.locator('.product-grid [data-action="product"][data-value="'+id+'"]').click();assert.match(await dialog().innerText(),/配送费/);await close();}
  await p.locator('[data-scenario="family"]').click();await act('consult');
  await p.locator('input[name="quantity"]').fill('2');assert.match(await p.locator('#quote-preview').innerText(),/130/);
  await p.locator('input[name="name"]').fill('演示访客');await p.locator('input[name="region"]').fill('广东深圳');await p.locator('input[name="consent"]').check();
@@ -76,7 +76,7 @@ const ok=message=>{checks.push(message);console.log('PASS',message);};
  await go('content');
  for(const channel of ['video','live','group','card']){await p.locator('[data-action="compose"][data-value="season:'+channel+'"]').click();assert.ok((await p.locator('textarea[name="body"]').inputValue()).length>50);await act('copy-compose');await download('download-compose');await close();}
  await p.locator('[data-action="compose"]').first().click();await p.locator('[data-form="compose"] [type="submit"]').click();await p.waitForFunction(()=>TaoyuanApp.state.route==='operator');assert.match(await p.locator('[data-form="draft"] input[name="title"]').inputValue(),/桃林日记/);
- await go('content');await p.locator('summary').click();await download('metric-template');
+ await go('content');await p.locator('#secondary-view summary').click();await download('metric-template');
  ok('IP series, clipboard, artwork downloads and four editable channel scripts');
  await go('trace');for(const key of ['origin','sort','ship','care']){await p.locator('[data-trace="'+key+'"]').click();assert.ok(await p.locator('.trace-detail').innerText());}
  await p.locator('#batch-search').fill('missing');await act('batch-search');await p.waitForFunction(()=>document.querySelector('#toast').textContent.includes('未找到'));
@@ -107,6 +107,7 @@ const ok=message=>{checks.push(message);console.log('PASS',message);};
  ok('3 record types, export/cancel, mobile menu, Escape cleanup and reduced motion');
  const page2=await context.newPage();await page2.goto(base+'#records');await p.evaluate(()=>PeachAPI.request('PATCH','/api/records/'+PeachAPI.snapshot().records[0].id,{status:'processing',reply:'多标签同步检查'}));await page2.waitForFunction(()=>PeachAPI.snapshot().records[0].reply==='多标签同步检查');await page2.close();ok('Cross-tab record synchronization');
  await go('records');await act('confirm-reset');await act('reset');await p.waitForFunction(()=>PeachAPI.snapshot().records.length===0);assert.equal(await p.evaluate(()=>PeachAPI.snapshot().ops.publications.length),0);ok('Confirmed reset clears only local demo state');
+ await go('home');await p.locator('#ai-chat-open').waitFor();await p.locator('#ai-chat-open').click();await p.locator('#chat-product').selectOption('fresh-5');await p.locator('#chat-message').fill('5斤家庭装多少钱？');await p.locator('#ai-chat-form [type="submit"]').click();await p.waitForFunction(()=>document.querySelector('.chat-message.assistant')?.textContent.includes('参考价不等于到手总价'));await p.locator('#ai-chat-close').click();ok('Static rule chat and recommendations run without a backend');
  assert.deepEqual(errors,[],'Unexpected browser errors');ok('No browser runtime errors or missing assets');
  await fs.writeFile(path.join(output,'results.json'),JSON.stringify({passed:checks.length,checks,errors,date:new Date().toISOString()},null,2));await browser.close();
  console.log(JSON.stringify({passed:checks.length,errors,output}));

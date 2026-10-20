@@ -16,6 +16,7 @@ import { upload,backupUpload,imageFiles } from './media.js';
 import { authRouter,usersRouter } from './users.js';
 import { createBackup,restoreBackup,saveBackup } from './backup.js';
 import { workflowRouter } from './workflow.js';
+import { intelligenceRouter } from './ai.js';
 const ROOT=resolve(fileURLToPath(new URL('../',import.meta.url)));
 export async function purgeExpired(db){const config=await settings(db);const analyticsDays=Math.max(7,Math.min(730,config?.analyticsRetentionDays||180)),requestDays=Math.max(1,Math.min(180,config?.requestRetentionDays||30));return db.transaction(async tx=>{await tx.query('DELETE FROM sessions WHERE expires_at<now()');const events=await tx.query(`DELETE FROM analytics_events WHERE created_at<now()-($1*interval '1 day') RETURNING id`,[analyticsDays]);const logs=await tx.query(`DELETE FROM request_logs WHERE created_at<now()-($1*interval '1 day') RETURNING id`,[requestDays]);return{events:events.rows.length,requests:logs.rows.length};});}
 export function createApp(db,{production=false,secret=token(),appUrl='http://localhost:8787',disableLimits=false}={}){
@@ -68,10 +69,11 @@ export function createApp(db,{production=false,secret=token(),appUrl='http://loc
   app.post('/api/admin/restore',requireRole('admin'),backupUpload.single('backup'),async(req,res)=>{if(req.body.confirmation!=='恢复并覆盖当前业务数据')fail(422,'请准确输入恢复确认文字');if(!req.file)fail(422,'请选择备份文件');const safetyPath=await saveBackup(db);const result=await restoreBackup(db,req.file.buffer);await audit(db,req.user,'system.restore','',{sourceAt:result.sourceAt});send(res,{...result,safetyBackup:safetyPath,relogin:true});});
   app.post('/api/admin/purge',requireRole('admin'),async(req,res)=>{const result=await purgeExpired(db);await audit(db,req.user,'system.retention_purge','',result);send(res,result);});
   app.use('/api/admin',workflowRouter(db,send));
+  app.use('/api',intelligenceRouter(db,send,limiter));
   app.use('/api',(req,res)=>fail(404,'接口或请求方法不存在'));
   app.use('/admin',express.static(resolve(ROOT,'admin'),{index:'index.html',dotfiles:'deny'}));
   app.use('/assets',express.static(resolve(ROOT,'assets'),{maxAge:'1d',dotfiles:'deny',setHeaders:(res,file)=>{if(/(?:wechat|douyin|xiaohongshu|contact-safe|origin-walk|peach-market|sorting-check)/i.test(file))res.setHeader('Cache-Control','no-store');}}));
-  const publicFiles=new Set(['index.html','styles.css','interactions.css','source-data.js','project-data.js','api.js','remote-api.js','front-cms.js','presentation-cms.js','analytics-client.js','app.js','BACKEND.md']);
+  const publicFiles=new Set(['index.html','styles.css','interactions.css','source-data.js','project-data.js','api.js','remote-api.js','front-cms.js','presentation-cms.js','analytics-client.js','app.js','BACKEND.md','ai-core.js','ai-features.js','ai-features.css']);
   app.get('/',(req,res)=>res.sendFile(resolve(ROOT,'index.html')));
   app.get('/:file',(req,res,next)=>{if(!publicFiles.has(req.params.file))return next();res.sendFile(resolve(ROOT,req.params.file));});
   app.use((req,res)=>res.status(404).type('text/plain').send('页面不存在'));

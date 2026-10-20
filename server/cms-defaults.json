@@ -3985,5 +3985,19 @@
       "replacement": "功能与接口 ↗"
     },
     "sort_order": 356
+  },
+  {
+    "module": "ai_settings",
+    "slug": "default",
+    "data": {
+      "chatEnabled": true,
+      "descriptionEnabled": true,
+      "recommendationEnabled": true,
+      "lowStockThreshold": 10,
+      "recommendationLimit": 3,
+      "welcomeMessage": "我是小桃满，帮你问清规格、发货安排和收货问题。",
+      "fallbackMessage": "这条问题还没有足够的已发布依据，请通过商品咨询交给运营核实。"
+    },
+    "sort_order": 10000
   }
 ]
