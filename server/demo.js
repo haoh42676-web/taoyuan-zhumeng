@@ -4,6 +4,7 @@ import {passwordHash} from './auth.js';
 import {WORKFLOWS} from './workflow-schema.js';
 import {validateContent} from './modules.js';
 import {createApp} from './app.js';
+import {seedDemoScenarios} from './demo-scenarios.js';
 const DEMO_SCHEMA='peach_demo',SEED_KEY='demo_seed_v2';
 const todayCN=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai'}).format(new Date());
 const previousDay=(today,n)=>new Date(Date.parse(today+'T12:00:00Z')-n*86400000).toISOString().slice(0,10);
@@ -11,7 +12,7 @@ function defaults(def,today){return Object.fromEntries(def.fields.map(f=>[f.key,
 
 /** Isolated seed only; createDemoApp owns the demo database connection. */
 export async function seedDemo(db){
- if(await one(db,'SELECT key FROM app_meta WHERE key=$1',[SEED_KEY]))return;
+ if(await one(db,'SELECT key FROM app_meta WHERE key=$1',[SEED_KEY])){await seedDemoScenarios(db);return;}
  const today=todayCN(),user='DEMO-ADMIN',password=await passwordHash('123456');
  await db.transaction(async tx=>{
   if(db.kind==='postgres')await tx.query('SELECT pg_advisory_xact_lock(784362018)');
@@ -45,6 +46,7 @@ export async function seedDemo(db){
   await tx.query("INSERT INTO content_items(id,module,slug,title,draft,status) VALUES('source_library--DEMO-SOURCE','source_library','DEMO-SOURCE','【模拟】资料归档样例',$1,'draft') ON CONFLICT(id) DO NOTHING",[JSON.stringify(source)]);
   await tx.query("INSERT INTO app_meta(key,value) VALUES($1,'true') ON CONFLICT(key) DO NOTHING",[SEED_KEY]);
  });
+ await seedDemoScenarios(db);
 }
 
 /** Preserve URI/TLS settings; local search_path survives transaction pooling without leaking into real queries. */

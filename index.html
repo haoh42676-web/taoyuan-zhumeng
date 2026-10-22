@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="interactions.css">
   <link rel="stylesheet" href="ai-features.css">
-<link rel="stylesheet" href="ui-system.css"><link rel="stylesheet" href="account.css"><script src="ui-system.js"></script></head>
+<link rel="stylesheet" href="ui-system.css"><link rel="stylesheet" href="account.css"><link rel="stylesheet" href="ip-experience.css"><script src="ui-system.js"></script></head>
 <body>
   <div class="grain" aria-hidden="true"></div>
   <header class="topbar">
@@ -38,19 +38,19 @@
           <span class="eyebrow"><i></i>桃源筑梦团队 · 共用演示模型</span>
           <h1 id="home-title">数商桃乡，<br><em>让好桃被看见</em></h1>
           <p>看真实桃园，选合适规格，让小桃满陪你问清一箱桃。商品咨询、内容复核与售后回访，在这里连成一条完整的体验。</p>
-          <div class="hero-actions"><button class="button button-primary" type="button" data-route="consumer">开始看消费者路径 <span>↗</span></button><button class="button button-quiet" type="button" data-route="evidence">先看事实依据 <span>↘</span></button></div>
+          <div class="hero-actions"><button class="button button-primary" type="button" data-route="consumer">选桃与售后 <span>↗</span></button><button class="button button-quiet" type="button" data-route="evidence">先看事实依据 <span>↘</span></button></div>
           <div class="hero-note"><span class="status status-demo">DEMO</span><span>商品、批次、订单与效果数据均有明确状态标识</span></div>
         </div>
         <div class="hero-art" aria-label="小桃满与上坪真实素材">
           <div class="hero-photo"><img src="assets/web/origin-walk.webp" alt="上坪桃园走访记录" fetchpriority="high" decoding="async"></div>
-          <div class="hero-ip"><img src="assets/web/xiaotaoman.webp" alt="小桃满桃林守护人"></div>
+          <div class="hero-ip"><img src="assets/ip-actions/welcome.webp" data-ip-art="welcome" alt="小桃满向你挥手，欢迎了解一箱桃"></div>
           <div class="hero-caption"><b>小桃满</b><span>把复杂的桃园事实，翻译成消费者听得懂的选择。</span></div>
         </div>
       </div>
       <div class="proof-strip"><div class="content-width proof-grid"><div><b>206</b><span>产业端受访者</span><small>159户自有果园 + 47名代管者</small></div><div><b>243</b><span>消费者有效样本</span><small>购买偏好与首购阻力</small></div><div><b>437</b><span>学生与 OPC 调查</span><small>其中351人在校</small></div><div><b>1 批桃</b><span>从采摘到回访</span><small>示例流程，非实际经营数据</small></div></div></div>
       <div class="dashboard content-width" aria-label="二级功能入口">
         <div class="dashboard-head"><div><span class="eyebrow"><i></i>从这里开始</span><h2>你想先做什么？</h2></div><p>选购、创作或了解项目，详细操作进入下一页。</p></div>
-        <div class="home-categories" role="group" aria-label="入口用途"><button type="button" data-home-group="buy" aria-pressed="true">选一箱桃 / 收货服务</button><button type="button" data-home-group="create" aria-pressed="false">小桃满 / 内容运营</button><button type="button" data-home-group="learn" aria-pressed="false">事实资料 / 项目讲解</button></div>
+        <div class="home-categories" role="group" aria-label="入口用途"><button type="button" data-home-group="buy" aria-pressed="true"><img src="assets/ip-actions/gift.webp" data-ip-art="gift" alt="" width="64" height="64"><span><b>选桃与售后</b><small>选规格 · 查批次 · 收货反馈</small></span></button><button type="button" data-home-group="create" aria-pressed="false"><img src="assets/ip-actions/guide.webp" data-ip-art="guide" alt="" width="64" height="64"><span><b>小桃满与创作</b><small>看IP · 写内容 · 人工复核</small></span></button><button type="button" data-home-group="learn" aria-pressed="false"><img src="assets/ip-actions/facts.webp" data-ip-art="facts" alt="" width="64" height="64"><span><b>项目与调研</b><small>看依据 · 明边界 · 讲项目</small></span></button></div>
         <div class="entry-grid">
           <button class="entry-card entry-card-wide" type="button" data-route="evidence"><span class="entry-number">01</span><span class="entry-icon">▦</span><b>事实中心</b><p>把问卷样本、题号、比例和可用结论放在同一张证据表里。</p><small>调查数据 · 来源映射 · 结论边界 <em>↗</em></small></button>
           <button class="entry-card entry-card-feature" type="button" data-route="consumer"><span class="entry-number">02</span><span class="entry-icon">◒</span><b>消费者端</b><p>按家庭、礼赠、团购切换场景，比较规格、价格和履约条件。</p><small>场景推荐 · 商品详情 · 咨询承接 <em>↗</em></small></button>
@@ -82,5 +82,6 @@
   <script src="app.js"></script>
   <script src="analytics-client.js"></script>
   <script type="module" src="ai-features.js"></script>
+  <script src="ip-experience.js" defer></script>
 </body>
 </html>

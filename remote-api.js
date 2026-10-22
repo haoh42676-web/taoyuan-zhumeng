@@ -26,7 +26,14 @@
       if(payload.files?.length){body=new FormData();const{files,...data}=payload;body.append('payload',JSON.stringify(data));for(const f of files)body.append('photos',f);}
       else{headers['Content-Type']='application/json';body=JSON.stringify(payload);}
     }
-    const response=await fetch(path,{method,headers,body,credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(20000)}),json=await response.json();
+    let response;
+    const bootstrap=method==='GET'&&path.startsWith('/api/bootstrap'),timeout=bootstrap?90000:20000;
+    for(let attempt=0;attempt<2;attempt++){
+      try{response=await fetch(path,{method,headers,body,credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(timeout)});}
+      catch(error){if(method==='GET'&&attempt===0&&error.name!=='TimeoutError'){await new Promise(resolve=>setTimeout(resolve,700));continue;}throw Error(error.name==='TimeoutError'?'服务响应较慢，请稍后重试；免费服务休眠后首次启动可能需要等待。':'网络暂时未连接，请检查网络后重试。');}
+      if(method==='GET'&&attempt===0&&[502,503,504].includes(response.status)){await response.body?.cancel();await new Promise(resolve=>setTimeout(resolve,700));continue;}break;
+    }
+    const json=await response.json().catch(()=>{throw Error('服务暂时未就绪，请稍后点击重试。');});
     if(!response.ok){const e=Error(json.error?.message||'请求未完成');e.status=response.status;throw e;}
     if(method==='GET'&&path.startsWith('/api/records'))db.records=json.data;
     if(path==='/api/ops/tasks'||path==='/api/ops/tasks/current')db.ops=json.data;
