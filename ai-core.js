@@ -1,18 +1,30 @@
 // Shared deterministic engine. Runs locally; no external model or personal-data upload.
+import {selectProjectKnowledge} from './project-knowledge.js';
 export const AI_DEFAULTS = Object.freeze({
   chatEnabled:true, descriptionEnabled:true, recommendationEnabled:true,
   lowStockThreshold:10, recommendationLimit:3,
-  welcomeMessage:'我是小桃满，帮你问清规格、发货安排和收货问题。',
-  fallbackMessage:'这条问题还没有足够的已发布依据，请通过商品咨询交给运营核实。'
+  welcomeMessage:'我是小桃满，可以聊选桃与售后、项目调研、IP营销、青年协作、赛事演示和合作流程。请先告诉我你想了解哪一部分。',
+  fallbackMessage:'这条项目问题还没有足够的已发布依据，请通过对应咨询入口交给运营核实。'
 });
 export const ENGINE_META={provider:'rules',label:'规则引擎 · 未接入大模型',version:'1.0.0'};
 const clean=x=>String(x??'').trim();
+const publicText=v=>String(v??'').replace(/sk-[a-zA-Z0-9_-]{8,}/g,'[密钥已隐藏]').replace(/(?:postgres(?:ql)?:\/\/|Bearer\s+)[^\s"']+/gi,'[私密连接已隐藏]').replace(/(?:\+?86[- ]?)?1[3-9](?:[- ]?\d){9}(?!\d)/g,'[手机号已隐藏]').replace(/\b\d{17}[\dXx]\b/g,'[证件号已隐藏]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[邮箱已隐藏]').replace(/(?:姓名|联系人|详细地址|收货地址|学号|微信号)\s*[:：=]\s*[^，。；\n]{1,90}/g,'[个人信息已隐藏]');
 export function merchandise(products=[]){
   return products.filter(p=>p.id!=='ip-card'&&!/设计展示|IP\s*触点/.test(p.priceNote+' '+p.type+' '+p.desc));
 }
-export function answerQuestion({message,products=[],faqs=[],batches=[],productId='',logistics=null,config={}}){
+export function answerQuestion({message,products=[],faqs=[],batches=[],productId='',logistics=null,config={},publicContent={}}){
   const rules={...AI_DEFAULTS,...config},text=clean(message),product=merchandise(products).find(p=>p.id===productId);
-  const response=(intent,answer,sources=[],route='consumer')=>({intent,answer,sources,route,...ENGINE_META});
+  const response=(intent,answer,sources=[],route='consumer')=>({intent,answer:publicText(answer),sources:sources.map(s=>({title:publicText(s.title),ref:publicText(s.ref)})),route,...ENGINE_META});
+  const knowledge=selectProjectKnowledge(text,{publicContent:{...publicContent,products,faqs,batches}});
+  if(knowledge.scope==='unrelated')return response('handoff','我只回答数商桃乡项目相关咨询，包括选桃与售后、项目调研、IP营销、青年协作、赛事演示和合作流程；不提供内部账号、密钥、原始个人资料，也不处理完全无关的任务。',[],'home');
+  const projectTopics=['research','ip','opc','cooperation','competition','tour','platform','trace'];
+  const execution=!!logistics?.requested||!!logistics?.found||/我.{0,8}(?:订单|买的|收到|物流)|查询.{0,8}(?:物流|订单)|收到.{0,10}(?:坏|破损|桃)|退(?:款|货)|破损|坏[了果桃]|腐烂|发霉/.test(text);
+  const projectTopic=execution?'':knowledge.topics.find(t=>projectTopics.includes(t))||(/项目.{0,10}(?:介绍|运作|流程|设计|设想)|介绍.{0,10}项目/.test(text)?'overview':!knowledge.topics.some(t=>['sales','delivery','aftercare','trace'].includes(t))?'overview':'');
+  if(projectTopic){
+    const chosen=knowledge.answerFacts||knowledge.facts.filter(f=>f.status!=='boundary'),facts=[...chosen.filter(f=>f.topic===projectTopic),...chosen.filter(f=>f.topic!==projectTopic)].slice(0,5);
+    const route={research:'evidence',ip:'ip',opc:'operator',cooperation:'operator',competition:'competition',tour:'rural',platform:'api',trace:'trace',overview:'home'}[projectTopic];
+    return response('project',facts.length?facts.map(f=>f.text).join('\n'):'这部分尚无足够公开依据，请提交项目咨询，由运营核实。',facts.map(f=>({title:({research:'调查证据',plan:'方案设想',reference:'参考信息',example:'示例',verified:'已核验记录',qualitative:'定性访谈',boundary:'适用边界'})[f.status]||'项目公开资料',ref:f.source})),route);
+  }
   if(/破损|坏[了果桃]|腐烂|发霉|售后|退款|赔|挤压/.test(text)){
     const faq=faqs.find(f=>/破损|物流问题|售后/.test(f.question));
     return response('aftercare',(faq?.answer||'请保留外箱、面单和果品照片，通过收货与售后页面提交反馈，运营会按购买前公开的批次规则核验。反馈提交不等于已确认赔付。')+' 请勿在聊天中发送详细住址或完整电话。',faq?[{title:faq.question,ref:faq.sourceRef||'已发布FAQ'}]:[], 'service');
