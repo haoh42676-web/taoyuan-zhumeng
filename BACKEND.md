@@ -2,7 +2,7 @@
 
 ## 同域服务
 
-npm start提供网站/、后台/admin/与/api/...。本地PGlite持久化PostgreSQL，未来由DATABASE_URL连接Neon。静态模式仍使用api.js，服务模式由remote-api.js切换为真实请求。
+npm start提供网站/、后台/admin/与/api/...。线上已使用Render免费网页服务与Neon PostgreSQL，通过服务端DATABASE_URL连接；本地无该配置时使用PGlite持久化数据库。静态模式仍使用api.js，服务模式由remote-api.js切换为真实请求。
 
 成功响应为{data,meta:{mode,persisted,requestId,updatedAt}}；失败为{error:{status,message,requestId}}。401未登录、403权限/来源问题、404不存在、409版本/编号/容量冲突、422字段或业务阶段不合法、429限流。
 
@@ -35,7 +35,7 @@ npm start提供网站/、后台/admin/与/api/...。本地PGlite持久化Postgre
 | 前缀 | 已实现操作 |
 | --- | --- |
 | /api/auth | login、me、password、logout |
-| /api/admin/schema | 16类CMS字段 |
+| /api/admin/schema | 当前CMS字段定义（含IP、智能功能设置与私有资料档案） |
 | /api/admin/content | GET列表、POST新增、PATCH /:id、GET /:id/history、POST /:id/publish/unpublish/archive/restore |
 | /api/admin/drafts | GET/POST多稿、PATCH /:id、GET /:id/history、POST /:id/action提交/复核、POST /:id/publish |
 | /api/admin/publications | GET发布记录、POST /:id/withdraw |
@@ -43,17 +43,17 @@ npm start提供网站/、后台/admin/与/api/...。本地PGlite持久化Postgre
 | /api/admin/media、/api/admin/assets | 上传及选择公开素材 |
 | /api/admin/analytics | summary、events、export；日期为北京时间 |
 | /api/admin/requests、/api/admin/audit | 请求、操作审计 |
-| /api/admin/users | 创建、改权限、停用、重置临时密码、撤销会话 |
+| /api/admin/users | 通用多成员模式支持创建、改权限、停用、重置临时密码、撤销会话；当前唯一管理员模式仅可读取，不开放成员写入 |
 | /api/admin/system、/backup、/restore、/purge | 系统、备份、恢复、到期明细清理 |
 
 ## 经营API
 
 | 方法与路径 | 行为 |
 | --- | --- |
-| GET /api/admin/workflow/schema | 六类表单、对应章节、输入输出与流程 |
+| GET /api/admin/workflow/schema | 七类表单、对应章节、输入输出与流程 |
 | GET /api/admin/workflow/options | 按权限提供可关联的商品、批次、成员、客户、原咨询、订单、建议与内容 |
 | GET /api/admin/workflow/summary | 签收净收款、成本、贡献额、复购和待办 |
-| GET /api/admin/workflow/:kind | customers/orders/signals/decisions/experiments/tasks |
+| GET /api/admin/workflow/:kind | collaborators/customers/orders/signals/decisions/experiments/tasks |
 | POST /api/admin/workflow/:kind | {data}新增 |
 | PATCH /api/admin/workflow/:kind/:id | {version,data}更新，拒绝旧版本 |
 | GET /api/admin/workflow/:kind/:id/history | 修改历史 |
@@ -65,7 +65,7 @@ CMS使用version，运营稿使用revision。兼容/ops/tasks/current新建每�
 
 ## 权限和规则
 
-管理员有全部权限；运营处理业务并复核发布；编辑维护网站资料和草稿，只能更新本人任务的交付、工时、工具使用和提交，不可看经营客户数据或自批费用；只读成员查内容、统计和台账，不可修改或读私有售后图片。
+当前正式站启用唯一管理员模式，只有配置的管理员账号可进入正式后台；协作人员档案不创建登录账号。以下是代码保留的通用角色规则，其他成员须在明确启用多成员模式后才能使用：管理员有全部业务权限；运营处理业务并复核发布；编辑维护网站资料和草稿，只能更新本人任务的交付、工时、工具使用和提交，不可看经营客户数据或自批费用；只读成员查内容、统计和台账，不可修改或读私有售后图片。
 
 批次对应一款SKU。stock是该规格核验总量；confirmed/shipped/completed占用，取消释放。成交及批次数量发布使用同一事务锁，不能跨规格混算。成交后保留商品与批次快照。
 
@@ -87,15 +87,31 @@ CMS使用version，运营稿使用revision。兼容/ops/tasks/current新建每�
 
 ## 以后接入
 
-在线模型、支付/退款执行、原店铺同步、实时物流、社交消息和对象存储由服务端接入，保留人工审核及权限。当前未调用这些服务。密钥和连接串只放环境变量。用户延期云部署；Render配置只有网页服务，数据库用Neon，不创建Render PostgreSQL。
+正式客服与商品文案已接入服务端主模型；主接口六秒内未完成、报错或事实校验失败时取消，尝试备用，再失败则规则兜底。DeepSeek备用接口保留但现有凭据尚未通过鉴权；GLM暂不接入。支付/退款执行、原店铺同步、实时物流与社交自动发布仍待接入，现阶段登记原渠道凭据。密钥与数据库连接串只保留在服务端配置。Render仅使用免费网页服务，数据库为Neon，不创建Render PostgreSQL。
 
 
 ## 2026-10-20 智能辅助接口
 
-POST /api/ai/chat：已发布事实的规则回答；本人咨询关联订单的登记物流。
+POST /api/ai/chat：登录客户的项目范围咨询，基于已发布脱敏事实使用模型辅助或规则回答；本人记录关联的有限物流状态按服务端权限读取。公开test1账号强制规则模式。
 POST /api/ai/recommendations：场景与本机偏好的规则推荐，不保存浏览偏好。
 POST /api/admin/ai/descriptions：管理员、运营、编辑生成文案，需要CSRF；保存走原有草稿接口。
 GET /api/admin/ai/dashboard?start=YYYY-MM-DD&end=YYYY-MM-DD：管理员、运营、只读查看匿名汇总，最多93天。
 ai_settings：后台配置并发布开关、提示语、推荐数量与库存阈值。
 
-当前 provider=rules，未调用外部模型。业务数据来自数据库，示例图表仅在浏览器生成。详细口径见AI功能说明与截图文件夹。
+正式业务数据来自数据库；正式看板无签收订单时默认显示明确标注的内存模拟示例，可切回真实空状态。完整可操作样本只放在独立peach_demo schema；静态版保存在当前浏览器，均不计入正式业绩。详细口径见docs/界面与智能功能说明.md。
+
+## 客服账号与资料接口
+
+| 方法与路径 | 行为 |
+| --- | --- |
+| GET /api/ai/status | 返回模型配置状态，不返回密钥 |
+| GET /api/customer/session | 本人会话与请求限额 |
+| POST /api/customer/register、/login、/logout | 客服账号注册、登录、退出；与运营账号分离 |
+| GET、DELETE /api/customer/chats | 查看或清除本人客服记录；公开演示不保留共享对话 |
+| GET /api/admin/materials/schema、/materials | 资料限制、分类、目标栏目和私有档案列表 |
+| POST /api/admin/materials/upload | 批量提取文字并给出本地分类建议，尚不公开 |
+| POST /api/admin/materials/commit | 人工确认事实、脱敏及权利后创建私有档案和相应栏目草稿 |
+| GET /api/admin/materials/:id/original、/:id/preview | 授权成员读取私有原件或影像预览，不提供公开地址 |
+| DELETE /api/admin/materials/:id | 丢弃待确认资料 |
+
+客服使用独立会话、来源检查、请求额度及并发限制。对外模型仅接收固定意图和相关公开脱敏事实，不接收原始用户问题、私有资料或订单。
