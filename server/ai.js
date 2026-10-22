@@ -5,13 +5,16 @@ import { published } from './content.js';
 import { requireRole,audit } from './auth.js';
 import { fail } from './modules.js';
 import { range,analyticsSummary } from './analytics.js';
+import {requireCustomer,reserveChat} from './customer.js';
+import {customerAnswer,redact} from './llm.js';
+import {randomUUID} from 'node:crypto';
 export async function intelligenceConfig(db){return {...AI_DEFAULTS,...(await published(db,'ai_settings'))[0]};}
 const chatSchema=z.object({message:z.string().trim().min(1).max(500),productId:z.string().max(80).default(''),recordId:z.string().trim().max(100).default('')}).strict();
 const descriptionSchema=z.object({weight:z.string().trim().min(1).max(60),grade:z.string().trim().min(1).max(80),origin:z.string().trim().min(1).max(120),scene:z.enum(['family','gift','group']),before:z.string().max(3000).default(''),sourceRef:z.string().trim().min(1).max(300)}).strict();
 const recommendationSchema=z.object({scene:z.enum(['','family','gift','group']).default(''),history:z.array(z.object({id:z.string().max(80),at:z.number().int().nonnegative()})).max(50).default([])}).strict();
 async function ownLogistics(db,req,recordId){
   if(!recordId)return null;
-  const rows=(await db.query("SELECT o.data FROM workflow_items o JOIN business_records r ON r.id=o.data->>'sourceRecordId' WHERE o.kind='orders' AND r.id=$1 AND r.visitor_hash=$2 AND o.data->>'status' IN ('confirmed','shipped','completed') ORDER BY o.updated_at DESC LIMIT 1",[recordId,req.visitorHash])).rows;
+  const rows=(await db.query("SELECT o.data FROM workflow_items o JOIN business_records r ON r.id=o.data->>'sourceRecordId' WHERE o.kind='orders' AND r.id=$1 AND r.visitor_hash=$2 AND (r.data->>'customerAccountId' IS NULL OR r.data->>'customerAccountId'=$3) AND o.data->>'status' IN ('confirmed','shipped','completed') ORDER BY o.updated_at DESC LIMIT 1",[recordId,req.visitorHash,req.customer?.id||''])).rows;
   if(!rows[0])return {requested:true,found:false};
   const d=rows[0].data;return {found:true,status:d.status,carrier:d.carrier||'',trackingTail:String(d.trackingNo||'').slice(-4),shippedAt:d.shippedAt||''};
 }
@@ -35,10 +38,11 @@ export async function intelligenceDashboard(db,query){
 }
 export function intelligenceRouter(db,send,limiter){
   const r=Router();
-  r.post('/ai/chat',limiter(60,60000),async(req,res)=>{
+  r.post('/ai/chat',requireCustomer,limiter(12,60000),async(req,res)=>{
     const p=chatSchema.parse(req.body),config=await intelligenceConfig(db);if(!config.chatEnabled)fail(403,'智能客服暂时暂停，请使用商品咨询或售后表单');
     const [products,faqs,batches]=await Promise.all([published(db,'products'),published(db,'faqs'),published(db,'batches')]);
-    send(res,answerQuestion({...p,products,faqs,batches,config,logistics:await ownLogistics(db,req,p.recordId)}));
+    const origin=req.headers.origin;if(origin&&new URL(origin).host!==req.get('host'))fail(403,'客服仅允许站点直接调用');if(req.headers['sec-fetch-site']==='cross-site')fail(403,'不接受跨站客服调用');
+    const release=await reserveChat(db,req);let result;try{const base=answerQuestion({...p,products,faqs,batches,config,logistics:await ownLogistics(db,req,p.recordId)});result=(req.demoMode||req.customer.demo)?{...base,label:'演示规则回答',modelUsed:false}:await customerAnswer({message:p.message,base});if(!req.customer.demo)await db.query('INSERT INTO customer_chats(id,account_id,question,answer,provider) VALUES($1,$2,$3,$4,$5)',[randomUUID(),req.customer.id,redact(p.message),result.answer,result.provider]);await db.query("DELETE FROM customer_chats WHERE created_at<now()-interval '7 days'");send(res,result);}finally{await release({refund:!result?.modelUsed});}
   });
   r.post('/ai/recommendations',limiter(90,60000),async(req,res)=>{
     const p=recommendationSchema.parse(req.body),config=await intelligenceConfig(db);
@@ -48,7 +52,7 @@ export function intelligenceRouter(db,send,limiter){
     const p=descriptionSchema.parse(req.body),config=await intelligenceConfig(db);if(!config.descriptionEnabled)fail(403,'商品文案生成暂时暂停');
     const data=generateDescription(p);await audit(db,req.user,'ai.description.generate','',{provider:'rules',sourceRef:p.sourceRef});send(res,data);
   });
-  r.get('/admin/ai/dashboard',requireRole('admin','operator','viewer'),async(req,res)=>send(res,await intelligenceDashboard(db,req.query)));
+  r.get('/admin/ai/dashboard',requireRole('admin','operator','viewer'),async(req,res)=>{const data=await intelligenceDashboard(db,req.query);send(res,{...data,example:!!req.demoMode,notes:req.demoMode?['隔离模拟区：全部成交、客户、库存和效果均为模拟，不代表经营实绩。',...data.notes]:data.notes});});
   return r;
 }
 

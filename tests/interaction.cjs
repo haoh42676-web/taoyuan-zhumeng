@@ -26,7 +26,7 @@ const ok=message=>{checks.push(message);console.log('PASS',message);};
   await p.setViewportSize({width,height:900});
   for(const route of routes){
    await go(route);
-   const layout=await p.evaluate(()=>({viewport:innerWidth,width:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth),orphans:[...document.querySelectorAll('button')].filter(b=>b.getClientRects().length&&!b.matches('[data-route],[data-action],[data-fact],[data-scenario],[data-filter],[data-trace],[data-ip],[data-ops],[data-content],[data-record-filter],[data-slide],[data-home-group],[type="submit"],.menu-button,.modal-close')).map(b=>b.textContent)}));
+   const layout=await p.evaluate(()=>({viewport:innerWidth,width:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth),orphans:[...document.querySelectorAll('button')].filter(b=>b.getClientRects().length&&!b.matches('[data-route],[data-action],[data-theme-toggle],[data-fact],[data-scenario],[data-filter],[data-trace],[data-ip],[data-ops],[data-content],[data-record-filter],[data-slide],[data-home-group],[type="submit"],.menu-button,.modal-close')).map(b=>b.textContent)}));
    assert.ok(layout.width<=width+1,`${route} overflow at ${width}: ${layout.width}`);
    assert.deepEqual(layout.orphans,[],route+' has unhandled buttons');
    if(width===390&&['home','consumer','operator','api','ip'].includes(route)){await stable();await p.screenshot({path:path.join(output,route+'-390.png'),fullPage:true});}

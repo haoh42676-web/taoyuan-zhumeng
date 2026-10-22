@@ -1,7 +1,7 @@
 import {AI_DEFAULTS,answerQuestion,recommendProducts} from './ai-core.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='peach-recommendations:v1',DAY=86400000;
-let products=[],faqs=[],batches=[],config={...AI_DEFAULTS},scene='',history=[],consent=false,dialog,conversation,busy=false,requestVersion=0;
+let products=[],faqs=[],batches=[],config={...AI_DEFAULTS},scene='',history=[],consent=false,dialog,conversation,busy=false,requestVersion=0,streamController,providerStatus,chatIdentity=null;
 function restore(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d?.enabled===true){consent=true;history=Array.isArray(d.history)?d.history.filter(x=>x&&typeof x.id==='string'&&Number.isFinite(x.at)&&Date.now()-x.at<30*DAY).slice(-50):[];}}catch{}}
 function persist(){try{if(consent)localStorage.setItem(KEY,JSON.stringify({enabled:true,history}));else localStorage.removeItem(KEY);}catch{}}
 async function getRecommendations(){
@@ -28,35 +28,47 @@ function recommendations(){
   window.addEventListener('storage',e=>{if(e.key===KEY){history=[];consent=false;restore();s.querySelector('#recommend-consent').checked=consent;renderRecommendations();}});
   renderRecommendations();
 }
-function addMessage(role,text,sources=[],route=''){
+async function addMessage(role,text,sources=[],route='',stream=false){
   const item=document.createElement('article');item.className='chat-message '+role;
   const who=document.createElement('b');who.textContent=role==='assistant'?'小桃满':'你';item.append(who);
-  const body=document.createElement('p');body.textContent=text;item.append(body);
+  const body=document.createElement('p');body.textContent=stream?'':text;item.append(body);
   if(sources.length){const refs=document.createElement('small');refs.textContent='依据：'+sources.map(s=>s.title+' · '+s.ref).join('；');item.append(refs);}
   if(route){const a=document.createElement('a');a.href='#'+route;a.textContent=({consumer:'前往商品咨询',service:'打开收货与售后',trace:'查看批次事实',records:'查看我的记录'})[route]||'继续查看';a.addEventListener('click',()=>dialog.close());item.append(a);}
-  conversation.append(item);while(conversation.children.length>20)conversation.firstElementChild.remove();conversation.scrollTop=conversation.scrollHeight;
+  conversation.append(item);while(conversation.children.length>20)conversation.firstElementChild.remove();item.scrollIntoView({block:'nearest',behavior:'instant'});
+  if(stream){streamController?.abort();streamController=new AbortController();await window.PeachUI.streamText(body,text,{signal:streamController.signal});const status=dialog.querySelector('.chat-answer-status');status.textContent='小桃满：'+text;item.scrollIntoView({block:'nearest',behavior:'instant'});}
+}
+function updateChatAccount(){
+ if(!dialog)return;const user=window.PeachAccount?.user,bar=dialog.querySelector('.chat-account');const identity=user?.id||user?.account||'';if(identity!==chatIdentity){chatIdentity=identity;streamController?.abort();conversation?.replaceChildren();if(conversation)addMessage('assistant',config.welcomeMessage);}
+ bar.querySelector('span').textContent=user?(user.demo?'测试体验账号 · 每日额度与同账号共享':'已登录 · 仅限项目服务咨询'):'登录后可以咨询商品、物流和售后';
+ bar.querySelector('button').textContent=user?'账号与退出':'登录 / 注册';
+ dialog.querySelector('.chat-heading p').textContent=window.PeachAPI.mode!=='server'?'静态演练 · 本地规则':providerStatus?.chat?.configured?'DeepSeek 辅助 · 事实核对':'规则客服 · 模型接口已预留';
 }
 function chat(){
   if(!config.chatEnabled)return;
   const launcher=document.createElement('button');launcher.type='button';launcher.className='chat-launcher';launcher.id='ai-chat-open';launcher.setAttribute('aria-haspopup','dialog');launcher.innerHTML='<img src="assets/web/xiaotaoman.webp" alt=""><span>问问小桃满<small>产品 · 物流 · 售后</small></span>';
   dialog=document.createElement('dialog');dialog.id='ai-chat';dialog.className='ai-chat';dialog.setAttribute('aria-labelledby','ai-chat-title');
-  dialog.innerHTML='<div class="chat-heading"><img src="assets/web/xiaotaoman.webp" alt=""><div><h2 id="ai-chat-title">小桃满智能客服</h2><p>规则匹配 · 未接入大模型</p></div><button type="button" id="ai-chat-close" aria-label="关闭客服">×</button></div><p class="chat-disclosure">回答依据已发布资料。'+(window.PeachAPI.mode==='server'?'查询登记物流需本浏览器的咨询编号。':'静态模式仅演练，不查询真实订单。')+' 对话仅在内存保留，请勿发送电话或详细地址。</p><details class="chat-context-options" open><summary>规格与物流编号</summary><div class="chat-context"><label>具体规格<select id="chat-product"><option value="">尚未选择</option>'+products.filter(p=>p.id!=='ip-card').map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('')+'</select></label><label>咨询编号（查物流时选填）<input id="chat-record" maxlength="100" placeholder="来自“我的记录”"></label></div></details><div class="chat-conversation" role="log" aria-live="polite" aria-label="客服对话"></div><div class="chat-shortcuts"><button type="button" data-chat-prompt="5斤家庭装的规格和价格是什么？">规格与价格</button><button type="button" data-chat-prompt="什么时候发货？包邮吗？">发货与运费</button><button type="button" data-chat-prompt="帮我查询物流到哪里了">查询物流</button><button type="button" data-chat-prompt="收到桃子有破损怎么办？">破损售后</button></div><form id="ai-chat-form"><label class="sr-only" for="chat-message">输入问题</label><textarea id="chat-message" maxlength="500" rows="2" required placeholder="请输入问题，最多500字"></textarea><div><button type="button" id="ai-chat-clear">清空对话</button><button type="submit">发送 ↗</button></div><p class="chat-error" role="alert" hidden></p></form>';
+  dialog.innerHTML='<div class="chat-heading"><img src="assets/web/xiaotaoman.webp" alt=""><div><h2 id="ai-chat-title">小桃满智能客服</h2><p>规则匹配 · 未接入大模型</p></div><button type="button" id="ai-chat-close" aria-label="关闭客服">×</button></div><div class="chat-account"><span></span><button type="button" id="chat-account-open">登录 / 注册</button></div><p class="chat-disclosure">回答依据已发布资料。'+(window.PeachAPI.mode==='server'?'查询登记物流需本浏览器的咨询编号。':'静态模式仅演练，不查询真实订单。')+' '+(window.PeachAPI.mode==='server'?'脱敏对话最多保存7天，可主动删除；':'对话仅在内存保留；')+'请勿发送电话或详细地址。</p><details class="chat-context-options" open><summary>规格与物流编号</summary><div class="chat-context"><label>具体规格<select id="chat-product"><option value="">尚未选择</option>'+products.filter(p=>p.id!=='ip-card').map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('')+'</select></label><label>咨询编号（查物流时选填）<input id="chat-record" maxlength="100" placeholder="来自“我的记录”"></label></div></details><div class="chat-conversation" role="log" aria-live="off" aria-label="客服对话"></div><div class="ui-sr-only chat-answer-status" role="status" aria-live="polite" aria-atomic="true"></div><div class="chat-shortcuts"><button type="button" data-chat-prompt="5斤家庭装的规格和价格是什么？">规格与价格</button><button type="button" data-chat-prompt="什么时候发货？包邮吗？">发货与运费</button><button type="button" data-chat-prompt="帮我查询物流到哪里了">查询物流</button><button type="button" data-chat-prompt="收到桃子有破损怎么办？">破损售后</button></div><form id="ai-chat-form"><label class="sr-only" for="chat-message">输入问题</label><textarea id="chat-message" maxlength="500" rows="2" required placeholder="请输入问题，最多500字"></textarea><div><button type="button" id="ai-chat-clear">清空对话</button><button type="submit">发送 ↗</button></div><p class="chat-error" role="alert" hidden></p></form>';
   launcher.dataset.action='ai-chat-open';dialog.querySelectorAll('button:not([type="submit"])').forEach(b=>b.dataset.action='ai-chat-control');
   document.body.append(launcher,dialog);conversation=dialog.querySelector('.chat-conversation');addMessage('assistant',config.welcomeMessage);
-  launcher.addEventListener('click',()=>{dialog.showModal();dialog.querySelector('#chat-message').focus();});dialog.querySelector('#ai-chat-close').addEventListener('click',()=>dialog.close());
-  dialog.querySelector('#ai-chat-clear').addEventListener('click',()=>{if(busy)return;conversation.replaceChildren();addMessage('assistant',config.welcomeMessage);});
+  dialog.addEventListener('close',()=>streamController?.abort());
+  launcher.addEventListener('click',()=>{updateChatAccount();dialog.showModal();dialog.querySelector('#chat-message').focus();});dialog.querySelector('#ai-chat-close').addEventListener('click',()=>dialog.close());
+  dialog.querySelector('#chat-account-open').addEventListener('click',()=>{dialog.close();window.PeachAccount.open();});
+  window.addEventListener('peach:accountchange',updateChatAccount);window.addEventListener('peach:logincomplete',()=>{updateChatAccount();if(!dialog.open)dialog.showModal();});updateChatAccount();
+  dialog.querySelector('#ai-chat-clear').addEventListener('click',async()=>{if(busy)return;try{if(window.PeachAccount?.isServer&&window.PeachAccount.user)await window.PeachAccount.request('/customer/chats',{method:'DELETE'});streamController?.abort();conversation.replaceChildren();addMessage('assistant',config.welcomeMessage);}catch(e){const err=dialog.querySelector('.chat-error');err.textContent=e.message;err.hidden=false;}});
   dialog.querySelectorAll('[data-chat-prompt]').forEach(b=>b.addEventListener('click',()=>{dialog.querySelector('#chat-message').value=b.dataset.chatPrompt;dialog.querySelector('#ai-chat-form').requestSubmit();}));
   dialog.querySelector('#ai-chat-form').addEventListener('submit',async e=>{
-    e.preventDefault();if(busy)return;const input=dialog.querySelector('#chat-message'),message=input.value.trim();if(!message)return;
+    e.preventDefault();if(busy)return;if(!window.PeachAccount?.user){dialog.close();window.PeachAccount.open();return;}const input=dialog.querySelector('#chat-message'),message=input.value.trim();if(!message)return;
     busy=true;const buttons=dialog.querySelectorAll('button:not(#ai-chat-close)');buttons.forEach(b=>b.disabled=true);const error=dialog.querySelector('.chat-error');error.hidden=true;
-    const productId=dialog.querySelector('#chat-product').value,recordId=dialog.querySelector('#chat-record').value.trim();input.value='';dialog.querySelector('.chat-context-options').open=false;if(conversation.children.length===1)conversation.replaceChildren();addMessage('user',message);
-    try{const result=window.PeachAPI.mode==='server'?(await window.PeachAPI.request('POST','/api/ai/chat',{message,productId,recordId})).data:answerQuestion({message,productId,products,faqs,batches,config});addMessage('assistant',result.answer,result.sources,result.route);}
+    const productId=dialog.querySelector('#chat-product').value,recordId=dialog.querySelector('#chat-record').value.trim();input.value='';window.PeachUI.setDisclosure(dialog.querySelector('.chat-context-options'),false);if(conversation.children.length===1)conversation.replaceChildren();addMessage('user',message);
+    try{const result=window.PeachAPI.mode==='server'?await window.PeachAccount.chat({message,productId,recordId}):answerQuestion({message,productId,products,faqs,batches,config});await addMessage('assistant',result.answer,result.sources,result.route,true);
+      const last=conversation.lastElementChild;if(last){const label=document.createElement('small');label.textContent=result.label||(window.PeachAPI.mode==='server'?'已发布事实 · 规则回答':'静态演练 · 本地规则');last.append(label);
+      if(result.authoritativeAnswer){const facts=document.createElement('details');facts.className='chat-authoritative';const summary=document.createElement('summary');summary.textContent='查看依据原文与适用边界';const p=document.createElement('p');p.textContent=result.authoritativeAnswer;facts.append(summary,p);last.append(facts);}}}
     catch(e){error.textContent=e.message||'暂时连接失败，请稍后重试。';error.hidden=false;input.value=message;}
     finally{busy=false;buttons.forEach(b=>b.disabled=false);input.focus();}
   });
 }
 try{
-  await window.PeachAPI.ready;
+  await window.PeachAPI.ready;await window.PeachAccount.ready;if(window.PeachAPI.mode==='server')try{providerStatus=await window.PeachAccount.request('/ai/status');}catch{}
   const result=await window.PeachAPI.request('GET','/api/catalog');
   products=Array.isArray(result.data)?result.data:result.data.items||result.data.products||[];
   const cms=window.PeachAPI.cms;if(cms){faqs=cms.faqs||[];batches=cms.batches||[];config={...config,...cms.ai_settings?.[0]};}

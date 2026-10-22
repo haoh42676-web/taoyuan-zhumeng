@@ -18,11 +18,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'C:/Users/Administrator/
   await v.locator('#recommend-clear').click();assert.equal(await v.evaluate(()=>localStorage.getItem('peach-recommendations:v1')),null);
   ok('Recommendation scene, opt-in browsing, 30-day local preference storage and deletion');
   await v.locator('#ai-recommendations').screenshot({path:path.join(out,'05_首页推荐_实际运行.png')});
-  await v.locator('#ai-chat-open').click();await v.locator('#chat-product').selectOption('fresh-5');
+  await v.locator('#ai-chat-open').click();await v.locator('#chat-account-open').click();await v.locator('#customer-login [name="account"]').fill('test1');await v.locator('#customer-login [name="password"]').fill('123456');await v.locator('#customer-login [type="submit"]').click();await v.locator('#ai-chat[open]').waitFor();await v.locator('#chat-product').selectOption('fresh-5');
   await v.locator('#ai-chat').evaluate(el=>{const n=document.createElement('p');n.textContent='实际运行演示 · 测试提问，非真实顾客会话';n.style='margin:0;padding:6px 20px;background:#f5e6c9;color:#765526;font-size:12px';el.querySelector('.chat-heading').after(n);});
   const cases=[['01_客服_产品规格.png','5斤家庭装多少钱，规格是什么？','参考价不等于到手总价'],['02_客服_发货运费.png','广东能包邮吗？什么时候发货？','48小时'],['03_客服_物流查询.png','我的订单物流到哪里了？','未接入快递实时轨迹'],['04_客服_破损售后.png','收到桃子有破损怎么办？','不等于已确认赔付']];
   for(const [file,q,expected]of cases){
-   await v.locator('#ai-chat-clear').click();await v.locator('#chat-message').fill(q);await v.locator('#ai-chat-form [type="submit"]').click();await v.waitForFunction(()=>document.querySelectorAll('.chat-message.assistant').length===1);assert.match(await v.locator('.chat-message.assistant').last().innerText(),new RegExp(expected));await v.locator('#ai-chat').screenshot({path:path.join(out,file)});
+   await v.locator('#ai-chat-clear').click();await v.locator('#chat-message').fill(q);await v.locator('#ai-chat-form [type="submit"]').click();await v.waitForFunction(()=>document.querySelectorAll('.chat-message.assistant').length===1&&!document.querySelector('[data-streaming]'));assert.match(await v.locator('.chat-message.assistant').last().innerText(),new RegExp(expected));await v.locator('#ai-chat').screenshot({path:path.join(out,file)});
   }
   await v.locator('#ai-chat-close').click();ok('Four genuine system-response screenshots with provenance and no fabricated customer conversations');
   await a.goto(base+'/admin/');await a.locator('#login-form [name="email"]').fill('ai-qa@test.local');await a.locator('#login-form [name="password"]').fill('AiBrowserTest2026!');await a.locator('#login-form [type="submit"]').click();await a.locator('#main-content[data-route="overview"]').waitFor();

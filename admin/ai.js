@@ -37,11 +37,11 @@ window.PeachAIAdmin=(()=>{
  }
  function draw(){
   dispose();if(state.route!=='ai-dashboard'||!dashboardData)return;
-  const d=example?sample():dashboardData;
-  const base={animation:!matchMedia('(prefers-reduced-motion: reduce)').matches,animationDuration:450,color:['#397257','#c9a77b','#7eaaa1','#d8cbb5'],textStyle:{fontFamily:'Microsoft YaHei, sans-serif',fontSize:13},aria:{enabled:true},tooltip:{trigger:'item',renderMode:'richText'},grid:{left:62,right:24,top:24,bottom:38}};
-  const emptyGraphic={type:'text',left:'center',top:'middle',style:{text:'暂无真实数据\n登记后自动显示',fontSize:16,lineHeight:28,fill:'#7e9284',textAlign:'center'}};
-  const plot=(id,option,empty)=>{const el=document.getElementById(id);if(!el||!window.echarts)return;const c=echarts.init(el,null,{renderer:'svg'});c.setOption({...base,...option,...(empty?{graphic:emptyGraphic}:{} )});charts.push(c);};
-  plot('ai-sales-chart',{tooltip:{trigger:'axis',renderMode:'richText'},xAxis:{type:'category',data:d.sales.daily.map(x=>x.date.slice(5)),boundaryGap:false},yAxis:{type:'value',name:'元',splitLine:{lineStyle:{color:'#e4ebe1'}}},series:d.sales.orders?[{name:'签收订单净收款',type:'line',smooth:.25,data:d.sales.daily.map(x=>x.netReceipts),symbolSize:7,areaStyle:{color:'#c5ddc570'},lineStyle:{width:3}}]:[]},!d.sales.orders);
+  const d=example?sample():dashboardData,css=getComputedStyle(document.documentElement),tone=n=>css.getPropertyValue(n).trim(),text=tone('--text-2'),weight=Number(css.getPropertyValue('--weight-400'));
+  const base={animation:!matchMedia('(prefers-reduced-motion: reduce)').matches,animationDuration:450,color:[tone('--accent'),tone('--peach'),tone('--mint'),tone('--sun')],textStyle:{fontFamily:'Peach UI, Microsoft YaHei, sans-serif',fontSize:13,fontWeight:weight,color:text},aria:{enabled:true},tooltip:{trigger:'item',renderMode:'richText'},grid:{left:62,right:24,top:24,bottom:38}};
+  const emptyGraphic={type:'text',left:'center',top:'middle',style:{text:'暂无真实数据\n登记后自动显示',fontSize:16,lineHeight:28,fill:text,fontWeight:weight,textAlign:'center'}};
+  const plot=(id,option,empty)=>{const el=document.getElementById(id);if(!el||!window.echarts)return;const c=echarts.init(el,null,{renderer:'svg'});const axis=a=>a?{...a,axisLabel:{color:text,fontWeight:weight},nameTextStyle:{color:text,fontWeight:weight},axisLine:{show:false},axisTick:{show:false},splitLine:{lineStyle:{color:tone('--surface-3')}}}:a;c.setOption({...base,...option,xAxis:axis(option.xAxis),yAxis:axis(option.yAxis),legend:{...option.legend,textStyle:{color:text,fontWeight:weight}},tooltip:{...base.tooltip,...option.tooltip,backgroundColor:tone('--surface-3'),borderWidth:0,textStyle:{color:text,fontWeight:weight}},...(empty?{graphic:emptyGraphic}:{} )});charts.push(c);};
+  plot('ai-sales-chart',{tooltip:{trigger:'axis',renderMode:'richText'},xAxis:{type:'category',data:d.sales.daily.map(x=>x.date.slice(5)),boundaryGap:false},yAxis:{type:'value',name:'元',splitLine:{lineStyle:{color:'#e4ebe1'}}},series:d.sales.orders?[{name:'签收订单净收款',type:'line',smooth:.25,data:d.sales.daily.map(x=>x.netReceipts),symbolSize:7,areaStyle:{color:tone('--accent-soft')},lineStyle:{width:3}}]:[]},!d.sales.orders);
   const pie=(id,list)=>plot(id,{legend:{bottom:0,type:'scroll'},series:list.length?[{type:'pie',radius:['43%','68%'],center:['50%','44%'],label:{formatter:'{b}\n{d}%'},data:list}]:[]},!list.length);
   pie('ai-devices-chart',d.audience.devices);pie('ai-regions-chart',d.audience.regions);
   const pages=[...d.audience.pages].filter(x=>x.value>0).sort((a,b)=>a.value-b.value).slice(-6);
@@ -58,9 +58,9 @@ window.PeachAIAdmin=(()=>{
    const values=Object.fromEntries(new FormData(form));delete values.productId;const request=++copyRequest,next=await api('/admin/ai/descriptions',{method:'POST',body:values});if(request!==copyRequest||!form.isConnected||state.route!=='ai-copy')return true;result=next;
    document.querySelector('#ai-copy-result').innerHTML=resultHTML();return true;
  }
- async function action(name){
+ async function action(name,value,el){
    if(name==='ai-dashboard-mode'){example=!example;document.querySelector('#main-content').innerHTML=dashboardHTML();draw();return true;}
-   if(name==='ai-copy-output'){if(!result)throw Error('请先生成文案');await navigator.clipboard.writeText(result.title+'\n'+result.body);notice('文案已复制，发布前请核验。');return true;}
+   if(name==='ai-copy-output'){if(!result)throw Error('请先生成文案');await navigator.clipboard.writeText(result.title+'\n'+result.body);el.dataset.copyPending='1';notice('文案已复制，发布前请核验。');return true;}
    if(name==='ai-save-draft'){
      if(!result)throw Error('字段已变化，请重新生成文案');
      const d=await api('/admin/drafts',{method:'POST',body:{title:result.title,body:result.body,sourceRefs:[result.sourceRef,'模板规则生成；事实待人工复核']}});result=null;
@@ -70,6 +70,7 @@ window.PeachAIAdmin=(()=>{
  document.addEventListener('input',e=>{if(e.target.closest('[data-form="ai-description"]'))invalidate();});
  document.addEventListener('change',e=>{if(e.target.matches('[data-form="ai-description"] [name="productId"]'))fillProduct(e.target.value);else if(e.target.closest('[data-form="ai-description"]'))invalidate();});
  window.addEventListener('hashchange',dispose);
+ window.addEventListener('peach:themechange',()=>{if(state.route==='ai-dashboard')draw();});
  return {page,mount:draw,submit,action,dispose};
 })();
 

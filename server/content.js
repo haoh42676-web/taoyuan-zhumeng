@@ -9,17 +9,24 @@ export async function seed(db){
   await db.transaction(async tx=>{
     if(db.kind==='postgres')await tx.query('SELECT pg_advisory_xact_lock(784362010)');
     if(new Set(rows.map(r=>r.module+'--'+r.slug)).size!==rows.length)throw Error('初始资料存在重复编号');
+    // Bound each network payload while keeping validation, insertion order and conflict protection.
+    async function insertRows(source,titleOf){
+      for(let start=0;start<source.length;start+=150){
+        const batch=source.slice(start,start+150).map(r=>{const data=validateContent(r.module,r.data);return{id:r.module+'--'+r.slug,module:r.module,slug:r.slug,title:titleOf(data,r),data,sort_order:r.sort_order};});
+        await tx.query("INSERT INTO content_items(id,module,slug,title,draft,published,status,sort_order,published_at) SELECT item.id,item.module,item.slug,item.title,item.data,item.data,'published',item.sort_order,now() FROM jsonb_to_recordset($1::jsonb) AS item(id text,module text,slug text,title text,data jsonb,sort_order integer) ON CONFLICT(module,slug) DO NOTHING",[JSON.stringify(batch)]);
+      }
+    }
     const defaults=baseRows.find(r=>r.module==='settings').data;const patch=Object.fromEntries(["brandSubtitle","heroEyebrow","heroCaption","dashboardTitle","dashboardIntro","footerText"].map(k=>[k,defaults[k]]));await tx.query("UPDATE content_items SET draft=$1::jsonb || draft,published=CASE WHEN published IS NULL THEN NULL ELSE $1::jsonb || published END WHERE module='settings'",[JSON.stringify(patch)]);
-    for(const r of extras){const data=validateContent(r.module,r.data);await tx.query("INSERT INTO content_items(id,module,slug,title,draft,published,status,sort_order,published_at) VALUES($1,$2,$3,$4,$5,$5,'published',$6,now()) ON CONFLICT(module,slug) DO NOTHING",[r.module+'--'+r.slug,r.module,r.slug,data.title||data.name||r.slug,JSON.stringify(data),r.sort_order]);}if(await one(tx,"SELECT key FROM app_meta WHERE key='initial_content_seeded'")){
+    await insertRows(extras,(data,r)=>data.title||data.name||r.slug);if(await one(tx,"SELECT key FROM app_meta WHERE key='initial_content_seeded'")){
       if(!await one(tx,"SELECT key FROM app_meta WHERE key='matrix_seed_v2'")){
         const matrixRows=rows.filter(r=>r.module==='survey_rows'&&r.data.type==='矩阵量表');
         await tx.query("DELETE FROM content_items WHERE module='survey_rows' AND slug LIKE 'opc-B08-%' AND slug !~ '^opc-B08-m[0-9]+-[0-9]+$' AND version=1");
-        for(const r of matrixRows)await tx.query(`INSERT INTO content_items(id,module,slug,title,draft,published,status,sort_order,published_at) VALUES($1,$2,$3,$4,$5,$5,'published',$6,now()) ON CONFLICT(module,slug) DO NOTHING`,[r.module+'--'+r.slug,r.module,r.slug,r.data.question,JSON.stringify(validateContent(r.module,r.data)),r.sort_order]);
+        await insertRows(matrixRows,(data,r)=>r.data.question);
         await tx.query("INSERT INTO app_meta(key,value) VALUES('matrix_seed_v2','true')");
       }
       return;
     }
-    for(const r of rows){const data=validateContent(r.module,r.data);await tx.query(`INSERT INTO content_items(id,module,slug,title,draft,published,status,sort_order,published_at) VALUES($1,$2,$3,$4,$5,$5,'published',$6,now()) ON CONFLICT(module,slug) DO NOTHING`,[r.module+'--'+r.slug,r.module,r.slug,data.title||data.name||data.question||data.brand||r.slug,JSON.stringify(data),r.sort_order]);}
+    await insertRows(rows,(data,r)=>data.title||data.name||data.question||data.brand||r.slug);
     await tx.query(`INSERT INTO app_meta(key,value) VALUES('initial_content_seeded','true'),('matrix_seed_v2','true')`);
   });
 }
