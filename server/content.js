@@ -3,11 +3,18 @@ import { Router } from 'express';
 import { one } from './db.js';
 import { uid, audit, requireRole } from './auth.js';
 import { MODULES, ROUTES, fail, slugSchema, validateContent } from './modules.js';
+import {AI_DEFAULTS} from '../ai-core.js';
 export const contentRow=r=>r&&({id:r.id,module:r.module,slug:r.slug,title:r.title,data:r.draft,published:r.published,status:r.status,version:r.version,sortOrder:r.sort_order,updatedAt:r.updated_at,publishedAt:r.published_at,updatedBy:r.updated_by});
 export async function seed(db){
   const baseRows=JSON.parse(await readFile(new URL('./seed-data.json',import.meta.url),'utf8'));const extras=JSON.parse(await readFile(new URL('./cms-defaults.json',import.meta.url),'utf8'));const rows=baseRows;
   await db.transaction(async tx=>{
     if(db.kind==='postgres')await tx.query('SELECT pg_advisory_xact_lock(784362010)');
+    if(!await one(tx,"SELECT key FROM app_meta WHERE key='project_chat_scope_v1'")){
+      for(const [field,oldValue]of Object.entries({welcomeMessage:'我是小桃满，帮你问清规格、发货安排和收货问题。',fallbackMessage:'这条问题还没有足够的已发布依据，请通过商品咨询交给运营核实。'})){
+        await tx.query("UPDATE content_items SET draft=CASE WHEN draft->>$1=$2 THEN jsonb_set(draft,ARRAY[$1]::text[],to_jsonb($3::text)) ELSE draft END,published=CASE WHEN published->>$1=$2 THEN jsonb_set(published,ARRAY[$1]::text[],to_jsonb($3::text)) ELSE published END WHERE module='ai_settings'",[field,oldValue,AI_DEFAULTS[field]]);
+      }
+      await tx.query("INSERT INTO app_meta(key,value) VALUES('project_chat_scope_v1','true')");
+    }
     if(new Set(rows.map(r=>r.module+'--'+r.slug)).size!==rows.length)throw Error('初始资料存在重复编号');
     // Bound each network payload while keeping validation, insertion order and conflict protection.
     async function insertRows(source,titleOf){

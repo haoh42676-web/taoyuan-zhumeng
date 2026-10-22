@@ -19,3 +19,6 @@
 @media(max-width:480px){.workflow-banner{padding:18px;gap:12px;align-items:flex-start}.workflow-banner img{width:55px;height:75px}.workflow-explain dl,.workflow-history dl{grid-template-columns:1fr;gap:7px}.workflow-explain dd,.workflow-history dd{margin-bottom:12px}.workflow-form-tabs button{padding:9px;font-size:15px}}
 .project-map{display:block}.project-map>.panel[hidden]{display:none}
 body{font-size:16px}label{font-size:15px}input,select,textarea{font-size:16px}.data-table{font-size:15px;line-height:1.65}.data-table td small{font-size:13px}.nav-item{font-size:15px}.guide p,.guide li{font-size:16px}.field-help,.form-error{font-size:14px}.panel>p{font-size:16px}
+.workspace>.demo-scope-banner{grid-column:1/-1;padding:12px 22px;background:var(--peach-soft);color:var(--peach-deep);font-size:15px;line-height:1.65;position:relative;z-index:5}
+.workspace:has(>.demo-scope-banner){grid-template-rows:auto minmax(0,1fr)}
+@media(max-width:800px){.workspace>.demo-scope-banner{padding:12px 18px;font-size:14px}}

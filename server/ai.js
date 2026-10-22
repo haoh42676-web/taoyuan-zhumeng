@@ -8,7 +8,9 @@ import { range,analyticsSummary } from './analytics.js';
 import {requireCustomer,reserveChat} from './customer.js';
 import {customerAnswer,redact} from './llm.js';
 import {randomUUID} from 'node:crypto';
+import {selectProjectKnowledge} from './project-knowledge.js';
 export async function intelligenceConfig(db){return {...AI_DEFAULTS,...(await published(db,'ai_settings'))[0]};}
+async function takeModelBudget(db){const bucket='site:'+new Date().toISOString().slice(0,10),limit=Math.max(1,Math.min(1000,Number(process.env.AI_SITE_DAILY_LIMIT)||300));const row=(await db.query("INSERT INTO ai_usage(bucket,used,expires_at) VALUES($1,1,now()+interval '2 days') ON CONFLICT(bucket) DO UPDATE SET used=ai_usage.used+1 WHERE ai_usage.used<$2 RETURNING used",[bucket,limit])).rows;if(!row.length)fail(429,'今日模型预算已用完，改用公开事实答复');}
 const chatSchema=z.object({message:z.string().trim().min(1).max(500),productId:z.string().max(80).default(''),recordId:z.string().trim().max(100).default('')}).strict();
 const descriptionSchema=z.object({weight:z.string().trim().min(1).max(60),grade:z.string().trim().min(1).max(80),origin:z.string().trim().min(1).max(120),scene:z.enum(['family','gift','group']),before:z.string().max(3000).default(''),sourceRef:z.string().trim().min(1).max(300)}).strict();
 const recommendationSchema=z.object({scene:z.enum(['','family','gift','group']).default(''),history:z.array(z.object({id:z.string().max(80),at:z.number().int().nonnegative()})).max(50).default([])}).strict();
@@ -40,17 +42,33 @@ export function intelligenceRouter(db,send,limiter){
   const r=Router();
   r.post('/ai/chat',requireCustomer,limiter(12,60000),async(req,res)=>{
     const p=chatSchema.parse(req.body),config=await intelligenceConfig(db);if(!config.chatEnabled)fail(403,'智能客服暂时暂停，请使用商品咨询或售后表单');
-    const [products,faqs,batches]=await Promise.all([published(db,'products'),published(db,'faqs'),published(db,'batches')]);
+    const selected=selectProjectKnowledge(p.message),topicModules={research:['research_sets','survey_rows'],ip:['ip_profile','ip_series'],opc:['pages'],cooperation:['pages'],competition:['slides'],tour:['tours'],platform:['pages'],overview:['pages']};
+    const modules=[...new Set(['products','faqs','batches',...selected.topics.flatMap(t=>topicModules[t]||[])])];
+    const publicContent=Object.fromEntries(await Promise.all(modules.map(async m=>[m,await published(db,m)])));
+    const {products,faqs,batches}=publicContent;
     const origin=req.headers.origin;if(origin&&new URL(origin).host!==req.get('host'))fail(403,'客服仅允许站点直接调用');if(req.headers['sec-fetch-site']==='cross-site')fail(403,'不接受跨站客服调用');
-    const release=await reserveChat(db,req);let result;try{const base=answerQuestion({...p,products,faqs,batches,config,logistics:await ownLogistics(db,req,p.recordId)});result=(req.demoMode||req.customer.demo)?{...base,label:'演示规则回答',modelUsed:false}:await customerAnswer({message:p.message,base});if(!req.customer.demo)await db.query('INSERT INTO customer_chats(id,account_id,question,answer,provider) VALUES($1,$2,$3,$4,$5)',[randomUUID(),req.customer.id,redact(p.message),result.answer,result.provider]);await db.query("DELETE FROM customer_chats WHERE created_at<now()-interval '7 days'");send(res,result);}finally{await release({refund:!result?.modelUsed});}
+    const release=await reserveChat(db,req);let result,attempts=0;
+    try{
+      const base=answerQuestion({...p,products,faqs,batches,config,publicContent,logistics:await ownLogistics(db,req,p.recordId)});
+      const onAttempt=async()=>{
+        if(attempts>0)await takeModelBudget(db);
+        attempts++;
+      };
+      result=(req.demoMode||req.customer.demo)?{...base,label:'演示规则回答',modelUsed:false,modelAttempted:false,modelAttempts:0}:await customerAnswer({message:p.message,base,onAttempt});
+      if(!req.customer.demo)await db.query('INSERT INTO customer_chats(id,account_id,question,answer,provider) VALUES($1,$2,$3,$4,$5)',[randomUUID(),req.customer.id,redact(p.message),result.answer,result.provider]);
+      await db.query("DELETE FROM customer_chats WHERE created_at<now()-interval '7 days'");send(res,result);
+    }finally{await release({refund:attempts===0});}
   });
   r.post('/ai/recommendations',limiter(90,60000),async(req,res)=>{
     const p=recommendationSchema.parse(req.body),config=await intelligenceConfig(db);
     send(res,{enabled:config.recommendationEnabled,provider:'rules',items:config.recommendationEnabled?recommendProducts({...p,products:await published(db,'products'),batches:await published(db,'batches'),limit:config.recommendationLimit}):[]});
   });
-  r.post('/admin/ai/descriptions',requireRole('admin','operator','editor'),async(req,res)=>{
+  r.post('/admin/ai/descriptions',requireRole('admin','operator','editor'),limiter(8,60000),async(req,res)=>{
     const p=descriptionSchema.parse(req.body),config=await intelligenceConfig(db);if(!config.descriptionEnabled)fail(403,'商品文案生成暂时暂停');
-    const data=generateDescription(p);await audit(db,req.user,'ai.description.generate','',{provider:'rules',sourceRef:p.sourceRef});send(res,data);
+    const data=generateDescription(p),safe={...data,title:redact(data.title),body:redact(data.body),after:redact(data.after)};
+    const assisted=req.demoMode?{modelUsed:false,provider:'rules',label:'模拟模板 · 不调用外部模型'}:await customerAnswer({message:'根据已审核事实整理商品介绍，保留全部待核验和批次说明。',base:{intent:'description',answer:safe.body,sources:[{title:'操作者录入规格 · 待人工核验',ref:'商品文案草稿'}],provider:'rules',label:'规则模板 · 待审核'},onAttempt:()=>takeModelBudget(db)});
+    const output={...safe,body:assisted.answer||safe.body,after:assisted.answer||safe.body,provider:assisted.provider,label:assisted.label,modelUsed:assisted.modelUsed,modelAttempts:assisted.modelAttempts||0};
+    await audit(db,req.user,'ai.description.generate','',{provider:output.provider,modelUsed:output.modelUsed,attempts:output.modelAttempts});send(res,output);
   });
   r.get('/admin/ai/dashboard',requireRole('admin','operator','viewer'),async(req,res)=>{const data=await intelligenceDashboard(db,req.query);send(res,{...data,example:!!req.demoMode,notes:req.demoMode?['隔离模拟区：全部成交、客户、库存和效果均为模拟，不代表经营实绩。',...data.notes]:data.notes});});
   return r;

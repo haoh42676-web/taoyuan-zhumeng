@@ -3995,8 +3995,8 @@
       "recommendationEnabled": true,
       "lowStockThreshold": 10,
       "recommendationLimit": 3,
-      "welcomeMessage": "我是小桃满，帮你问清规格、发货安排和收货问题。",
-      "fallbackMessage": "这条问题还没有足够的已发布依据，请通过商品咨询交给运营核实。"
+      "welcomeMessage": "我是小桃满，可以聊选桃与售后、项目调研、IP营销、青年协作、赛事演示和合作流程。请先告诉我你想了解哪一部分。",
+      "fallbackMessage": "这条项目问题还没有足够的已发布依据，请通过对应咨询入口交给运营核实。"
     },
     "sort_order": 10000
   }
