@@ -1,6 +1,7 @@
 (async () => {
 'use strict';
-try { await window.PeachAPI.ready; } catch (error) { document.querySelector('#home-view').hidden=true; const panel=document.querySelector('#secondary-view'); panel.classList.remove('is-hidden'); const message=document.createElement('p'); message.className='notice'; message.textContent='网站资料暂时无法加载：'+error.message+'。请刷新页面重试。'; panel.append(message); return; }
+const waiting=setTimeout(()=>{const n=document.createElement('p');n.className='notice';n.id='site-startup-note';n.setAttribute('role','status');n.textContent='正在读取项目资料。免费服务休眠后首次打开可能稍慢，请稍候。';document.querySelector('#app')?.prepend(n);},4000);
+try { await window.PeachAPI.ready; } catch (error) { document.querySelector('#home-view').hidden=true; const panel=document.querySelector('#secondary-view'); panel.classList.remove('is-hidden'); const message=document.createElement('p'); message.className='notice'; message.textContent='网站资料暂时无法加载：'+error.message;const retry=document.createElement('button');retry.type='button';retry.className='button button-primary';retry.textContent='重新加载资料';retry.onclick=()=>location.reload();panel.append(message,retry); return; }finally{clearTimeout(waiting);document.querySelector('#site-startup-note')?.remove();}
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const home=$('#home-view'),secondary=$('#secondary-view'),modal=$('#app-modal'),modalContent=$('#modal-content');
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
