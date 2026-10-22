@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b352b">
   <meta name="description" content="数商桃乡：小桃满 IP、上坪鹰嘴蜜桃事实链与 AI+OPC 运营原型。">
-  <title>数商桃乡 · 静态备份</title>
+  <title>数商桃乡 · 小桃满工作台</title>
   <link rel="icon" href="assets/web/xiaotaoman.webp">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="interactions.css">
   <link rel="stylesheet" href="ai-features.css">
-</head>
+<link rel="stylesheet" href="ui-system.css"><link rel="stylesheet" href="account.css"><script src="ui-system.js"></script></head>
 <body>
   <div class="grain" aria-hidden="true"></div>
   <header class="topbar">
@@ -63,7 +63,7 @@
           <button class="entry-card entry-card-dark" type="button" data-route="competition"><span class="entry-number">09</span><span class="entry-icon">↗</span><b>赛事讲解模式</b><p>按“问题—证据—方案—推广”快速讲清项目价值和边界。</p><small>四类赛道 · 演示顺序 · 推广条件 <em>↗</em></small></button>
         </div>
       </div>
-      <div class="content-width" style="padding:16px 0;font-size:16px;line-height:1.8"><strong>GitHub Pages 静态备份 · 2026-10-20</strong><br>咨询、售后及运营记录仅在当前浏览器演练，不会提交到线上后台。正式网站：<a href="https://shushang-taoxiang.onrender.com/" rel="noopener">https://shushang-taoxiang.onrender.com/</a></div><div class="home-footer content-width"><span>真实事实 → 内容整理 → 人工核验 → 服务与回访</span><button class="back-link" type="button" data-route="api">功能与接口 ↗</button></div>
+      <div class="home-footer content-width"><span>真实事实 → 内容整理 → 人工核验 → 服务与回访</span><button class="back-link" type="button" data-route="api">功能与接口 ↗</button></div>
     </section>
     <section id="secondary-view" class="secondary-view is-hidden" aria-live="polite"></section>
   </main>
@@ -71,10 +71,12 @@
   <dialog id="app-modal" class="app-modal" aria-labelledby="modal-title"><div class="modal-box"><button class="modal-close" type="button" aria-label="关闭">×</button><div id="modal-content"></div></div></dialog>
   <div id="toast" class="toast" role="status"></div>
   <script src="runtime-config.js"></script>
+  <script src="account.js"></script>
   <script src="source-data.js"></script>
   <script src="project-data.js"></script>
   <script src="api.js"></script>
   <script src="remote-api.js"></script>
+  <script src="demo-data.js"></script>
   <script src="front-cms.js"></script>
   <script src="presentation-cms.js"></script>
   <script src="app.js"></script>
