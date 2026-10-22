@@ -10,6 +10,6 @@ if(production){if(!secret||secret.length<32)throw new Error('生产环境SESSION
 else if(!secret){await mkdir('.data',{recursive:true});try{secret=await readFile('.data/session-secret','utf8');}catch{secret=token();await writeFile('.data/session-secret',secret,{mode:0o600});}}
 const db=await openDatabase();await migrate(db);await seed(db);await enforceSingleAdmin(db);await bootstrapAdmin(db,{production});await purgeExpired(db);
 const demoApp=await createDemoApp(db,{production,secret,appUrl});
-const app=createApp(db,{production,secret,appUrl,demoApp}),server=app.listen(port,'0.0.0.0',()=>console.log(`数商桃乡已启动：${appUrl}\n运营后台：${appUrl}/admin/\n数据库：${db.kind}\n${production?'':'首次本地登录信息：.data/first-login.txt（仅首次创建时生成）'}`));
+const app=createApp(db,{production,secret,appUrl,demoApp});await app.locals.ready;const server=app.listen(port,'0.0.0.0',()=>console.log(`数商桃乡已启动：${appUrl}\n运营后台：${appUrl}/admin/\n数据库：${db.kind}\n${production?'':'首次本地登录信息：.data/first-login.txt（仅首次创建时生成）'}`));
 let purgeRunning=false;const timer=setInterval(async()=>{if(purgeRunning)return;purgeRunning=true;try{await purgeExpired(db);await purgeExpired(demoApp.locals.demoDatabase);}catch(e){console.error('日志保留任务失败：'+(e.code||e.name));}finally{purgeRunning=false;}},3600000);timer.unref();
 let closing=false;async function close(){if(closing)return;closing=true;clearInterval(timer);server.close(async()=>{await demoApp.locals.demoDatabase.close();await db.close();process.exit(0);});setTimeout(()=>process.exit(1),10000).unref();}process.on('SIGTERM',close);process.on('SIGINT',close);

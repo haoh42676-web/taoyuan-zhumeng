@@ -57,5 +57,5 @@ export async function openDemoDatabase(realDB,{url=process.env.DATABASE_URL,data
 }
 export async function createDemoApp(realDB,options={}){
  const {demoDataDir,demoDatabaseURL,...appOptions}=options,db=await openDemoDatabase(realDB,{dataDir:demoDataDir||'.data/demo-postgres',url:demoDatabaseURL||process.env.DATABASE_URL});
- try{await migrate(db);await seed(db);await seedDemo(db);const app=createApp(db,{...appOptions,demoMode:true});app.locals.demoDatabase=db;return app;}catch(e){await db.close();throw e;}
+ try{await migrate(db);await seed(db);await seedDemo(db);const app=createApp(db,{...appOptions,demoMode:true});app.locals.demoDatabase=db;await app.locals.ready;return app;}catch(e){await db.close();throw e;}
 }
