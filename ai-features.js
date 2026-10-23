@@ -19,7 +19,10 @@ function recommendations(){
   if(!config.recommendationEnabled)return;
   const s=document.createElement('section');s.id='ai-recommendations';s.className='content-width ai-recommendations';
   s.innerHTML='<div class="ai-section-heading"><div><span class="ai-eyebrow">按用途挑选 · 可解释规则推荐</span><h2>为您推荐</h2></div><label>我想选<select id="recommend-scene" aria-label="推荐用途"><option value="">先看看</option><option value="family">家庭鲜食</option><option value="gift">礼赠</option><option value="group">社群团购</option></select></label></div><div class="recommendation-grid" aria-live="polite"></div><div class="recommendation-privacy"><label><input type="checkbox" id="recommend-consent" '+(consent?'checked':'')+'> 使用近30天浏览偏好</label><span>偏好仅保存在当前浏览器；关闭会删除记录。推荐不保证可售或配送。</span><button type="button" id="recommend-clear">清除偏好</button></div>';
-  document.querySelector('#home-view .dashboard')?.before(s);
+  const compact=typeof window.PeachCompact==='function'&&['shushang-taoxiang.onrender.com','localhost','127.0.0.1'].includes(location.hostname);
+  const mount=()=>{if(compact){const slot=document.querySelector('.compact-recommendations-slot');if(slot)slot.append(s);else s.remove();}else document.querySelector('#home-view .dashboard')?.before(s);};
+  mount();if(compact)window.addEventListener('peach:route',mount);
+  if(compact)document.addEventListener('peach:refresh',()=>queueMicrotask(mount));
   s.querySelector('#recommend-clear').dataset.action='ai-recommend-clear';
   s.querySelector('#recommend-scene').addEventListener('change',e=>{scene=e.target.value;renderRecommendations();});
   s.querySelector('#recommend-consent').addEventListener('change',e=>{consent=e.target.checked;if(!consent)history=[];persist();renderRecommendations();});
