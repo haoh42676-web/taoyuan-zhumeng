@@ -89,6 +89,7 @@ function asset(src,name){const a=document.createElement('a');a.href=src;a.downlo
 async function busy(el,fn){if(el?.dataset.busy)return;const label=el?.textContent;if(el){el.dataset.busy='true';el.disabled=true;el.setAttribute('aria-busy','true');el.textContent='处理中…';}try{return await fn();}finally{if(el?.isConnected){el.disabled=false;el.removeAttribute('aria-busy');delete el.dataset.busy;el.textContent=label;}}}
 async function saveDraft(f){const data=new FormData(f);return api.request('PATCH','/api/ops/tasks/current',{action:'draft',title:data.get('title'),body:data.get('body')});}
 async function action(type,value,el){
+ if(['ai-chat-open','ai-chat-control','ai-recommend-clear','account-open','customer-service-open'].includes(type))return;
  if(window.PeachOnline && await window.PeachOnline.action(type,value,el))return;
  if(type==='close'){closeModal();return;}if(type==='ops'){state.ops=value;refresh();return;}
  if(type==='product'){product(value);return;}if(type==='consult'){consultation(value);return;}if(type==='compose'){compose(value);return;}if(type==='record'){record(value);return;}if(type==='tour-form'){tourForm();return;}if(type==='claim-form'){claimForm();return;}
