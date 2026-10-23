@@ -39,7 +39,7 @@ async function addMessage(role,text,sources=[],route='',stream=false){
 }
 function updateChatAccount(){
  if(!dialog)return;const user=window.PeachAccount?.user,bar=dialog.querySelector('.chat-account');const identity=user?.id||user?.account||'';if(identity!==chatIdentity){chatIdentity=identity;streamController?.abort();conversation?.replaceChildren();if(conversation)addMessage('assistant',config.welcomeMessage);}
- bar.querySelector('span').textContent=user?(user.demo?'测试体验账号 · 每日额度与同账号共享':'已登录 · 仅限项目服务咨询'):'登录后可咨询选桃、调研、IP、赛事与合作';
+ bar.querySelector('span').textContent=user?(user.demo?'测试体验账号 · 每日咨询有额度限制':'已登录 · 仅限项目服务咨询'):'登录后可咨询选桃、调研、IP、赛事与合作';
  bar.querySelector('button').textContent=user?'账号与退出':'登录 / 注册';
  dialog.querySelector('.chat-heading p').textContent=window.PeachAPI.mode!=='server'?'静态演练 · 本地规则':providerStatus?.chat?.configured?'项目AI辅助 · 公开事实核对':'规则客服 · 模型接口已预留';
 }

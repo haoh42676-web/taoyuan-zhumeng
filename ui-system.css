@@ -12,14 +12,7 @@
  --weight-100:100;--weight-200:200;--weight-300:300;--weight-400:400;--weight-500:500;--weight-550:550;--weight-600:600;--weight-650:650;--weight-700:700;--weight-750:750;--weight-800:800;--weight-900:900;
  --ease-focus:cubic-bezier(.16,1,.3,1);color-scheme:light;
 }
-:root[data-theme=dark]{
- --surface-0:hsl(145 9% 8%);--surface-1:hsl(145 9% 10%);--surface-2:hsl(145 9% 12%);--surface-3:hsl(145 9% 14%);
- --text-1:#e0ebe3;--text-2:#afc1b4;--text-3:#9bae9f;--on-accent:#f1f6ef;
- --accent:#a1d2ae;--accent-strong:#315f47;--accent-soft:#243e30;--peach:#e8ac8f;--peach-soft:#3b3029;--peach-deep:#efb19a;
- --glass:rgb(26 32 28 / .86);--veil:rgb(14 26 20 / .65);--focus:rgb(165 209 176 / .22);--focus-inner:rgb(165 209 176 / .46);
- --shadow:0 18px 56px rgb(8 20 14 / .22);--shadow-sm:0 6px 22px rgb(8 20 14 / .18);--sun:#e4c18a;--mint:#8aab8d;
- --weight-100:60;--weight-200:160;--weight-300:260;--weight-400:360;--weight-500:460;--weight-550:510;--weight-600:560;--weight-650:610;--weight-700:660;--weight-750:710;--weight-800:760;--weight-900:860;color-scheme:dark;
-}
+
 html{background:var(--surface-0);font-family:var(--font-ui);color:var(--text-1);font-weight:var(--weight-400);scrollbar-color:var(--text-3) transparent}
 body{background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--peach-soft) 65%,transparent),transparent 42%),radial-gradient(ellipse at 0% 60%,color-mix(in srgb,var(--accent-soft) 45%,transparent),transparent 45%),var(--surface-0);color:var(--text-1);font-family:var(--font-ui);font-weight:var(--weight-400);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.75}
 *,*::before,*::after{border-width:0}
@@ -101,3 +94,6 @@ dialog{max-height:calc(100dvh - 24px)}
 @media(max-width:720px){.topbar{gap:10px}.topbar>.theme-toggle{margin-left:auto;width:42px;height:42px;min-height:42px}.topbar>.menu-button{margin-left:0}.topbar>.top-nav{order:4}.chat-message{font-size:15px}.chat-shortcuts button{font-size:12px}.top-actions .theme-toggle{width:40px;min-height:40px;height:40px}.top-actions{flex-wrap:wrap}.login-theme-toggle{right:14px;top:14px}.ui-panel-handle{cursor:default;touch-action:auto}.ui-draggable-panel{translate:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.ink-token{opacity:1;filter:none}}
 @media(forced-colors:active){:where(button,a,input,select,textarea,summary):focus-visible{outline:2px solid Highlight!important}.copy-feedback-label{background:ButtonFace;color:ButtonText}.theme-toggle{forced-color-adjust:auto}}
+
+/* This project uses a consistent light appearance, including OS dark mode. */
+:root{color-scheme:light}html,body{min-height:100%;background-color:var(--surface-0)}[data-theme-toggle],.theme-toggle{display:none!important}
