@@ -44,7 +44,7 @@ const FACTS=Object.freeze([
   fact('tour-route','tour','“一日桃乡”设想包含果园观察、分拣体验、集市与礼盒等节点，用小桃满导览串联真实体验。接待日期、人员、容量、安全和卫生条件须合作方确认，路线展示不是正式开放承诺。','project-data.js · rural；icanAIOPC农文旅方案','plan'),
   fact('tour-intention','tour','基线方案的接待日期与容量尚未核实；可记录出行意向。提交意向不预留名额、不收费、不确认预约或接待方接受，正式安排需后续人工确认。','公开tours初始接待条件；bookingAvailable/openDates/capacity','boundary'),
   fact('platform-tech','platform','平台前端以HTML、CSS和JavaScript实现页面与交互，服务端为Node.js与Express，线上数据使用Neon PostgreSQL并由Render提供网页服务；本地可使用PGlite。浏览器通过同源HTTP API连接服务端，数据库连接与模型密钥仅在服务端配置。','package.json；server/app.js、db.js；项目技术说明','reference'),
-  fact('platform-demo','platform','GitHub Pages静态备份使用浏览器本地演示，不能当成连通生产后台。演示账号与演示业务数据应隔离并标为模拟；真实经营看板不应由模拟销量填充。','项目静态备份与演示隔离说明','boundary'),
+  fact('platform-demo','platform','GitHub Pages静态备份的记录仅保存在当前浏览器，不能当成连通生产后台。演示账号与演示业务数据应隔离并标为模拟；真实经营看板不应由模拟销量填充。','项目静态备份与演示隔离说明','boundary'),
   fact('platform-ai','platform','智能辅助包括客服、商品文案、基于浏览或场景的可解释推荐、经营看板和资料分类草稿。规则或模板可独立运行；外部模型以当前服务状态为准。生成文案和资料归类都需人工核验，上传原件与私人档案不向客服公开。','ai-core.js；智能辅助与资料导入规范','boundary'),
   fact('platform-account','platform','客户登录与后台工作人员账号分开。客户会话和本人登记状态需按权限访问，客服不能提供后台密码、他人数据或数据库内容。速率、站点与账户限额减少滥用，不宣称绝对防代理。','server/customer.js；客服隐私与限额规范','boundary')
 ]);

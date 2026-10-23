@@ -1,16 +1,12 @@
 /* Shared behavior: themes, native disclosures, readable streaming and copy feedback. */
 (()=>{'use strict';
- const key='peach-ui-theme:v1',root=document.documentElement,system=matchMedia('(prefers-color-scheme: dark)'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let saved;try{saved=localStorage.getItem(key);}catch{}
- const icon='<svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2a9 9 0 1 0 9.9 9.9Z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg>';
- function theme(value,persist=false){
-  const next=['light','dark'].includes(value)?value:system.matches?'dark':'light';root.dataset.theme=next;
-  if(persist){saved=next;try{localStorage.setItem(key,next);}catch{}}
-  document.querySelectorAll('[data-theme-toggle]').forEach(b=>{const label=next==='dark'?'切换浅色模式':'切换暗色模式';b.setAttribute('aria-label',label);b.title=label;b.setAttribute('aria-pressed',String(next==='dark'));});
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',next==='dark'?'#131815':'#eef2ee');
-  window.dispatchEvent(new CustomEvent('peach:themechange',{detail:{theme:next}}));
+ const key='peach-ui-theme:v1',root=document.documentElement,reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ function theme(){
+  root.dataset.theme='light';try{localStorage.removeItem(key);}catch{}
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#eef2ee');
+  window.dispatchEvent(new CustomEvent('peach:themechange',{detail:{theme:'light'}}));
  }
- theme(saved);system.addEventListener('change',()=>{if(!saved)theme();});window.addEventListener('storage',e=>{if(e.key===key){saved=e.newValue;theme(saved);}});
+ theme();window.addEventListener('storage',e=>{if(e.key===key)theme();});
  const closures=new WeakMap(),openFrames=new WeakMap(),openFallbacks=new WeakMap();
  function finishClose(d){if(d.dataset.expanded==='false')d.open=false;}
  function setDisclosure(d,expanded){
@@ -87,10 +83,6 @@
  function sidebarState(){const sidebar=document.querySelector('#sidebar'),toggle=document.querySelector('.menu-toggle[data-action=menu]');if(!sidebar||!toggle)return;toggle.setAttribute('aria-controls',sidebar.id);toggle.setAttribute('aria-expanded',String(sidebar.classList.contains('open')));}
  function closeSidebar(restore=false){const sidebar=document.querySelector('#sidebar.open');if(!sidebar)return;sidebar.classList.remove('open');sidebarState();if(restore)document.querySelector('.menu-toggle[data-action=menu]')?.focus({preventScroll:true});}
  function init(){
-  const toggle=()=>{const b=document.createElement('button');b.type='button';b.className='theme-toggle';b.dataset.themeToggle='true';b.innerHTML=icon;b.addEventListener('click',e=>{e.stopPropagation();theme(root.dataset.theme==='dark'?'light':'dark',true);});return b;};
-  const front=document.querySelector('.topbar');if(front)front.insertBefore(toggle(),front.querySelector('.menu-button'));
-  const admin=document.querySelector('.top-actions');if(admin)admin.prepend(toggle());
-  if(document.querySelector('#login-screen')){const b=toggle();b.classList.add('login-theme-toggle');document.querySelector('#login-screen').append(b);}
   theme(root.dataset.theme);enhanceNode(document.body);sidebarState();
   const skip=document.createElement('a');skip.className='ui-skip-link';skip.href=document.querySelector('#app')?'#app':'#main-content';skip.textContent='跳至主要内容';skip.addEventListener('click',e=>{e.preventDefault();const target=['#main-content','#app','main','#login-form'].map(s=>document.querySelector(s)).find(visible);if(target){if(!target.hasAttribute('tabindex'))target.tabIndex=-1;target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:'instant'});}});document.body.prepend(skip);
   document.addEventListener('click',e=>{const active=e.target.closest('button,a,input,summary,[tabindex]');if(active)lastActivator=active;if(desktop.matches||e.target.closest('#sidebar,.menu-toggle')||document.querySelector('dialog[open]'))return;closeSidebar();},true);
