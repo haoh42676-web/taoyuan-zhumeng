@@ -1,10 +1,10 @@
-/* Shared UI contract · 2026-10-22. Surfaces differ by 2 HSL lightness points. */
+/* Shared UI contract · 2026-10-24. Adjacent surfaces differ by 2 HSL lightness points. */
 @font-face{font-family:Peach UI;src:url('assets/fonts/peach-ui-variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
 :root{
  --surface-0:hsl(135 15% 94%);--surface-1:hsl(135 15% 96%);--surface-2:hsl(135 15% 98%);--surface-3:hsl(135 15% 100%);
  --text-1:#203f34;--text-2:#536e61;--text-3:#65796e;--on-accent:#f5f8f4;
  --accent:#2a664e;--accent-strong:#24543f;--accent-soft:#e0eade;--peach-soft:#f4e7dd;--peach-deep:#9b543e;
- --glass:rgb(247 250 247 / .82);--veil:rgb(28 48 39 / .28);--focus:rgb(66 124 91 / .27);--focus-inner:rgb(66 124 91 / .49);
+ --glass:var(--surface-1);--veil:rgb(28 48 39 / .28);--focus:rgb(66 124 91 / .19);--focus-inner:rgb(66 124 91 / .38);
  --shadow:0 18px 56px rgb(30 60 43 / .09);--shadow-sm:0 6px 22px rgb(30 60 43 / .06);
  --paper:var(--surface-0);--paper-deep:var(--surface-2);--white:var(--surface-3);--ink:var(--text-1);--ink-soft:var(--text-2);--muted:var(--text-2);--line:transparent;
  --forest-950:var(--accent-strong);--forest-900:var(--accent);--forest-800:var(--accent);--forest-700:var(--accent);--green:var(--accent);
@@ -12,18 +12,28 @@
  --weight-100:100;--weight-200:200;--weight-300:300;--weight-400:400;--weight-500:500;--weight-550:550;--weight-600:600;--weight-650:650;--weight-700:700;--weight-750:750;--weight-800:800;--weight-900:900;
  --ease-focus:cubic-bezier(.16,1,.3,1);color-scheme:light;
 }
+:root[data-theme=dark]{
+ --surface-0:hsl(240 8% 7%);--surface-1:hsl(240 8% 9%);--surface-2:hsl(240 8% 11%);--surface-3:hsl(240 8% 13%);
+ --text-1:#e3eae6;--text-2:#b0bdb5;--text-3:#95a49b;--on-accent:#192a22;
+ --accent:#aed4bd;--accent-strong:#b9d9c6;--accent-soft:hsl(145 10% 13%);--peach-soft:hsl(24 10% 13%);--peach-deep:#e1ad95;
+ --peach:#d4a28c;--sun:#d9c79e;--mint:#a4bca9;
+ --veil:rgb(14 16 19 / .68);--focus:rgb(167 211 184 / .15);--focus-inner:rgb(167 211 184 / .35);
+ --shadow:0 18px 56px rgb(6 10 8 / .23);--shadow-sm:0 6px 22px rgb(6 10 8 / .16);
+ --weight-100:60;--weight-200:160;--weight-300:260;--weight-400:360;--weight-500:460;--weight-550:510;--weight-600:560;--weight-650:610;--weight-700:660;--weight-750:710;--weight-800:760;--weight-900:860;
+ color-scheme:dark;
+}
 
 html{background:var(--surface-0);font-family:var(--font-ui);color:var(--text-1);font-weight:var(--weight-400);scrollbar-color:var(--text-3) transparent}
-body{background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--peach-soft) 65%,transparent),transparent 42%),radial-gradient(ellipse at 0% 60%,color-mix(in srgb,var(--accent-soft) 45%,transparent),transparent 45%),var(--surface-0);color:var(--text-1);font-family:var(--font-ui);font-weight:var(--weight-400);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.75}
-*,*::before,*::after{border-width:0}
+body{background:var(--surface-0);color:var(--text-1);font-family:var(--font-ui);font-weight:var(--weight-400);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.75}
+*,*::before,*::after{border-width:0;font-variant-numeric:tabular-nums!important}
 button,input,textarea,select{font-family:var(--font-ui);font-weight:inherit}
 h1,h2,h3,h4,h5,h6,b,strong,th{font-weight:var(--weight-700)}
 p{ text-wrap:pretty }
 svg{vertical-align:-.125em}
 time,output,progress,meter,.stats,.stat,.kpi,.fact-summary,.proof-grid,.record-count,.record-bottom,.data-table,table,.recommendation-price,.product-foot,.chart,.ai-chart,[data-record-count],[data-dynamic-number]{font-variant-numeric:tabular-nums}
 :where(button,a,input,select,textarea,summary){-webkit-tap-highlight-color:transparent}
-:where(button,a,input,select,textarea,summary,[role=button],[contenteditable=true],[tabindex]:not([tabindex="-1"])):focus-visible{outline:none!important;box-shadow:0 0 0 4px var(--focus),inset 0 0 0 2px var(--focus-inner)!important}
-:where(input:not([type=checkbox]):not([type=radio]),select,textarea):focus{outline:none!important;box-shadow:0 5px 18px var(--focus),inset 0 0 0 2px var(--focus-inner)!important}
+:where(button,a,input,select,textarea,summary,[role=button],[contenteditable=true],[tabindex]:not([tabindex="-1"])):focus-visible{outline:none!important;box-shadow:0 5px 18px var(--focus),0 0 0 3px color-mix(in srgb,var(--focus) 45%,transparent),inset 0 0 0 1.5px var(--focus-inner)!important}
+:where(input:not([type=checkbox]):not([type=radio]),select,textarea):focus{outline:none!important;box-shadow:0 5px 18px var(--focus),0 1px 7px var(--focus),inset 0 0 0 1.5px var(--focus-inner)!important}
 input,textarea,select{background:var(--surface-3);color:var(--text-1);transition:box-shadow .18s var(--ease-focus),background .18s var(--ease-focus)}
 input::placeholder,textarea::placeholder{color:var(--text-3);opacity:1}
 input[type=checkbox],input[type=radio]{accent-color:var(--accent);box-shadow:none}
@@ -86,7 +96,7 @@ dialog{max-height:calc(100dvh - 24px)}
 .ui-draggable-panel[data-ui-dragging=true] .ui-panel-handle{cursor:grabbing}
 .ui-panel-handle button{cursor:pointer;touch-action:manipulation}
 .copy-feedback{position:relative;isolation:isolate}.copy-feedback>*:not(.copy-feedback-label){visibility:hidden}.copy-feedback-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--accent-strong);color:var(--on-accent);border-radius:inherit;font-size:inherit;white-space:nowrap}.copy-feedback-label svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
-.ui-pop{animation:micro-spring .42s both}@keyframes micro-spring{0%{transform:scale(.76)}48%{transform:scale(1.12)}75%{transform:scale(.97)}100%{transform:scale(1)}}
+.ui-pop{transform-origin:center;will-change:transform}
 :root[data-theme=dark] .entry-card{box-shadow:var(--shadow-sm)}:root[data-theme=dark] .hero-photo img{filter:saturate(1.04)}
 :root[data-theme=dark] .top-nav.is-open{background:var(--surface-2)}:root[data-theme=dark] .ai-demo-banner,:root[data-theme=dark] .warning{background:var(--peach-soft);color:var(--peach-deep)}
 :root[data-theme=dark] .chart-bar{background:var(--accent-strong)}
@@ -95,5 +105,20 @@ dialog{max-height:calc(100dvh - 24px)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.ink-token{opacity:1;filter:none}}
 @media(forced-colors:active){:where(button,a,input,select,textarea,summary):focus-visible{outline:2px solid Highlight!important}.copy-feedback-label{background:ButtonFace;color:ButtonText}.theme-toggle{forced-color-adjust:auto}}
 
-/* This project uses a consistent light appearance, including OS dark mode. */
-:root{color-scheme:light}html,body{min-height:100%;background-color:var(--surface-0)}[data-theme-toggle],.theme-toggle{display:none!important}
+/* Content surfaces stay quiet; brand contrast belongs to action controls. */
+html,body{min-height:100%;background-color:var(--surface-0)}
+.entry-grid .entry-card,.entry-grid .entry-card:hover,.entry-grid .entry-card:focus-visible{background:var(--surface-1);color:var(--text-1);box-shadow:var(--shadow-sm)}
+.button,.button:hover,.button:focus-visible,.back-link,.back-link:hover,.filter-tabs button,.filter-tabs button.is-active{background-image:none;background-blend-mode:normal}
+.entry-card p,.entry-card small{color:var(--text-2)}.entry-card b{color:var(--text-1)}
+.hero-photo,.hero-ip,.hero-caption{box-shadow:var(--shadow)}.hero-caption{background:var(--surface-1)}
+.scenario-panel,.service-intro,.fact-note,.trace-head,.operator-side,.proof-strip,.matrix-card.feature{background:var(--surface-1);color:var(--text-1)}
+.scenario-panel :is(p,small),.scenario-button,.service-intro :is(p,span),.fact-note :is(p,ul),.trace-head :is(p,small),.operator-side :is(p,small),.proof-strip small,.matrix-card.feature :is(p,b){color:var(--text-2)}
+.operator-nav button{color:var(--text-2)}.operator-nav button.is-active{background:var(--surface-3);color:var(--text-1)}
+.scenario-button,.scenario-button:hover,.scenario-button.is-active{background:var(--surface-2);color:var(--text-1);box-shadow:none}
+.scenario-button.is-active{background:var(--surface-3)}
+.filter-tabs button.is-active{background:var(--surface-3);color:var(--text-1)}
+.entry-grid .entry-card.cms-entry-image{background:var(--surface-1)!important}
+.entry-grid .entry-card.cms-entry-image :is(b,p,small,.entry-number){color:var(--text-1)!important;text-shadow:none}
+:root[data-theme=dark] .competition-page{background:var(--surface-0);color:var(--text-1)}
+:root[data-theme=dark] .competition-page :is(.view-head h2,.back-link,.view-bar,.presentation-tabs button){color:var(--text-1)}
+:root[data-theme=dark] .competition-page .presentation-stage{background:var(--surface-1);color:var(--text-1)}

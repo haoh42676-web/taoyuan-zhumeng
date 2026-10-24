@@ -1,12 +1,20 @@
 /* Shared behavior: themes, native disclosures, readable streaming and copy feedback. */
 (()=>{'use strict';
- const key='peach-ui-theme:v1',root=document.documentElement,reduced=matchMedia('(prefers-reduced-motion: reduce)');
- function theme(){
-  root.dataset.theme='light';try{localStorage.removeItem(key);}catch{}
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#eef2ee');
-  window.dispatchEvent(new CustomEvent('peach:themechange',{detail:{theme:'light'}}));
+ const key='peach-ui-theme:v1',root=document.documentElement,reduced=matchMedia('(prefers-reduced-motion: reduce)'),systemTheme=matchMedia('(prefers-color-scheme: dark)');
+ const savedTheme=()=>{try{const value=localStorage.getItem(key);return ['light','dark'].includes(value)?value:null;}catch{return null;}};
+ function theme(value,persist=true){
+  const selected=['light','dark'].includes(value)?value:(savedTheme()||(systemTheme.matches?'dark':'light'));
+  root.dataset.theme=selected;if(persist&&['light','dark'].includes(value))try{localStorage.setItem(key,selected);}catch{}
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',selected==='dark'?'#101013':'#eef2ee');
+  document.querySelectorAll('[data-theme-toggle]').forEach(button=>{button.setAttribute('aria-pressed',String(selected==='dark'));button.setAttribute('aria-label',selected==='dark'?'切换到浅色模式':'切换到深色模式');button.title=button.getAttribute('aria-label');});
+  window.dispatchEvent(new CustomEvent('peach:themechange',{detail:{theme:selected}}));
  }
- theme();window.addEventListener('storage',e=>{if(e.key===key)theme();});
+ theme(undefined,false);window.addEventListener('storage',e=>{if(e.key===key)theme(undefined,false);});systemTheme.addEventListener('change',()=>{if(!savedTheme())theme(undefined,false);});
+ function installThemeButtons(){
+  const button=()=>{const el=document.createElement('button');el.type='button';el.className='theme-toggle';el.dataset.themeToggle='1';el.innerHTML='<svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';el.addEventListener('click',()=>theme(root.dataset.theme==='dark'?'light':'dark'));return el;};
+  const toolbar=document.querySelector('.top-actions,.demo-header-actions')||document.querySelector('.topbar');if(toolbar&&!toolbar.querySelector('[data-theme-toggle]'))toolbar.append(button());
+  const login=document.querySelector('#login-screen');if(login&&!login.querySelector('[data-theme-toggle]')){const el=button();el.classList.add('login-theme-toggle');login.append(el);}
+ }
  const closures=new WeakMap(),openFrames=new WeakMap(),openFallbacks=new WeakMap();
  function finishClose(d){if(d.dataset.expanded==='false')d.open=false;}
  function setDisclosure(d,expanded){
@@ -32,13 +40,13 @@
   if(!button.dataset.copyFeedback){button.dataset.copyFeedback='true';button.dataset.copyOriginal=button.innerHTML;button.dataset.copyLabel=button.getAttribute('aria-label')||'';}
   button.classList.add('copy-feedback');button.setAttribute('aria-label','已复制');announce('已复制到剪贴板');
   const label=document.createElement('span');label.className='copy-feedback-label ui-pop';label.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span>已复制</span>';
-  button.querySelector('.copy-feedback-label')?.remove();button.append(label);
+  button.querySelector('.copy-feedback-label')?.remove();button.append(label);springClick(label);
   function hide(){if(!button.isConnected)return;button.innerHTML=button.dataset.copyOriginal;if(button.dataset.copyLabel)button.setAttribute('aria-label',button.dataset.copyLabel);else button.removeAttribute('aria-label');button.classList.remove('copy-feedback');delete button.dataset.copyFeedback;delete button.dataset.copyOriginal;delete button.dataset.copyLabel;}
   feedbackTimers.set(button,setTimeout(hide,2500));
  }
  const activeStreams=new WeakMap();
  function streamText(target,text,{signal}={}){
-  activeStreams.get(target)?.();target.textContent='';const chars=Array.from(String(text)),item=target.closest('.chat-message');
+  activeStreams.get(target)?.();target.textContent='';const chars=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(String(text))].map(s=>s.segment):Array.from(String(text)),item=target.closest('.chat-message');
   if(reduced.matches||signal?.aborted||!chars.length){target.textContent=text;return Promise.resolve();}
   if(item)item.dataset.streaming='true';target.setAttribute('aria-hidden','true');
   const fragment=document.createDocumentFragment();chars.forEach((char,i)=>{const span=document.createElement('span');span.className='ink-token';span.style.setProperty('--token-index',i);span.textContent=char;fragment.append(span);});target.append(fragment);
@@ -47,6 +55,13 @@
  }
  // Overdamped, unit-mass analytical spring. Zero release velocity keeps the path monotonic.
  const SPRING_PHYSICS=Object.freeze({drag:Object.freeze({stiffness:1200,damping:80}),click:Object.freeze({stiffness:420,damping:20})});
+ const clickAnimations=new WeakMap();
+ function springClick(element){
+  clickAnimations.get(element)?.cancel();if(reduced.matches||!element?.animate)return;
+  const {stiffness,damping}=SPRING_PHYSICS.click,decay=damping/2,frequency=Math.sqrt(stiffness-decay*decay),duration=650;
+  const frames=Array.from({length:79},(_,i)=>{const t=i/78*duration/1000,offset=-.28*Math.exp(-decay*t)*(Math.cos(frequency*t)+decay/frequency*Math.sin(frequency*t));return{offset:i/78,transform:'scale('+(1+offset)+')'};});
+  frames[frames.length-1].transform='scale(1)';const animation=element.animate(frames,{duration,easing:'linear'});clickAnimations.set(element,animation);return animation;
+ }
  const panelStates=new WeakMap(),panelElements=new Set(),desktop=matchMedia('(min-width: 721px) and (pointer: fine)');
  const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
  function panelState(panel){let state=panelStates.get(panel);if(!state){state={x:0,y:0,frame:0};panelStates.set(panel,state);panelElements.add(panel);}return state;}
@@ -56,7 +71,7 @@
   if(reduced.matches){positionPanel(panel,x,y);s.frame=0;return;}
   const {stiffness,damping}=SPRING_PHYSICS.drag,root=Math.sqrt(damping*damping-4*stiffness),r1=(-damping+root)/2,r2=(-damping-root)/2,start=performance.now();
   const remaining=t=>(-r2*Math.exp(r1*t)+r1*Math.exp(r2*t))/(r1-r2);
-  const step=now=>{const decay=remaining((now-start)/1000);positionPanel(panel,x+(from.x-x)*decay,y+(from.y-y)*decay);if(Math.max(Math.abs((from.x-x)*decay),Math.abs((from.y-y)*decay))>.1)s.frame=requestAnimationFrame(step);else{positionPanel(panel,x,y);s.frame=0;}};s.frame=requestAnimationFrame(step);
+  const step=now=>{const decay=clamp(remaining(Math.max(0,now-start)/1000),0,1);positionPanel(panel,x+(from.x-x)*decay,y+(from.y-y)*decay);if(Math.max(Math.abs((from.x-x)*decay),Math.abs((from.y-y)*decay))>.1)s.frame=requestAnimationFrame(step);else{positionPanel(panel,x,y);s.frame=0;}};s.frame=requestAnimationFrame(step);
  }
  function enhancePanel(panel){
   if(panel.dataset.uiPanel)return;const handle=panel.querySelector('.chat-heading,[data-panel-handle]');if(!handle)return;panel.dataset.uiPanel='1';panel.classList.add('ui-draggable-panel');handle.classList.add('ui-panel-handle');handle.tabIndex=desktop.matches?0:-1;handle.setAttribute('aria-label','客服窗口位置；可拖动，或用方向键移动，Home键居中');handle.title='拖动窗口 · 方向键微调 · Home居中';
@@ -83,13 +98,14 @@
  function sidebarState(){const sidebar=document.querySelector('#sidebar'),toggle=document.querySelector('.menu-toggle[data-action=menu]');if(!sidebar||!toggle)return;toggle.setAttribute('aria-controls',sidebar.id);toggle.setAttribute('aria-expanded',String(sidebar.classList.contains('open')));}
  function closeSidebar(restore=false){const sidebar=document.querySelector('#sidebar.open');if(!sidebar)return;sidebar.classList.remove('open');sidebarState();if(restore)document.querySelector('.menu-toggle[data-action=menu]')?.focus({preventScroll:true});}
  function init(){
-  theme(root.dataset.theme);enhanceNode(document.body);sidebarState();
+  installThemeButtons();theme(root.dataset.theme,false);enhanceNode(document.body);sidebarState();
   const skip=document.createElement('a');skip.className='ui-skip-link';skip.href=document.querySelector('#app')?'#app':'#main-content';skip.textContent='跳至主要内容';skip.addEventListener('click',e=>{e.preventDefault();const target=['#main-content','#app','main','#login-form'].map(s=>document.querySelector(s)).find(visible);if(target){if(!target.hasAttribute('tabindex'))target.tabIndex=-1;target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:'instant'});}});document.body.prepend(skip);
   document.addEventListener('click',e=>{const active=e.target.closest('button,a,input,summary,[tabindex]');if(active)lastActivator=active;if(desktop.matches||e.target.closest('#sidebar,.menu-toggle')||document.querySelector('dialog[open]'))return;closeSidebar();},true);
+  document.addEventListener('click',e=>{const reaction=e.target.closest('[data-like],[data-reaction],[data-feedback-spring]');if(reaction&&!reaction.disabled)springClick(reaction);});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')&&document.querySelector('#sidebar.open')){closeSidebar(true);e.preventDefault();}});
   const resetPanels=()=>{for(const panel of panelElements){cancelAnimationFrame(panelState(panel).frame);positionPanel(panel,0,0);const handle=panel.querySelector('.ui-panel-handle');if(handle)handle.tabIndex=desktop.matches?0:-1;}};window.addEventListener('resize',resetPanels);desktop.addEventListener('change',resetPanels);reduced.addEventListener('change',()=>{if(reduced.matches)resetPanels();});
   new MutationObserver(records=>{for(const record of records){if(record.type==='attributes'){sidebarState();continue;}for(const n of record.addedNodes){if(n.nodeType===1)enhanceNode(n);}}}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
  }
- window.PeachUI={theme,copied,streamText,setDisclosure,springPanel,springPhysics:SPRING_PHYSICS};
+ window.PeachUI={theme,copied,streamText,setDisclosure,springPanel,springClick,springPhysics:SPRING_PHYSICS};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

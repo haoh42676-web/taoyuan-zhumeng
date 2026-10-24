@@ -26,6 +26,17 @@ const output = process.env.PEACH_QA_OUTPUT || path.join(__dirname, '..', '.data'
     assert.equal(await page.locator('.home-footer a[href="https://shushang-taoxiang.onrender.com/admin/"]').count(), 1);
     await page.evaluate(() => localStorage.setItem('peach-digital-media-scope-check', 'unchanged'));
     check('four primary routes, three homepage cards and original-project links');
+    await page.evaluate(() => PeachUI.theme('light'));
+    await page.locator('[data-theme-toggle]').click();
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
+    assert.equal(await page.locator('body').evaluate(x => Number(getComputedStyle(x).fontWeight)), 360);
+    await page.screenshot({path: path.join(output, 'desktop-dark.png'), fullPage: true});
+    await page.reload();
+    await page.waitForFunction(() => window.TaoyuanApp);
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
+    await page.locator('[data-theme-toggle]').click();
+    assert.equal(await page.locator('body').evaluate(x => Number(getComputedStyle(x).fontWeight)), 400);
+    check('static theme switch persists dark mode and applies exact 40-point optical compensation');
     await go('consumer');
     assert.equal(await page.locator('.compact-products > .product-grid > .product-card').count(), 2);
     const gifts = page.locator('.compact-products > details');
@@ -120,6 +131,12 @@ const output = process.env.PEACH_QA_OUTPUT || path.join(__dirname, '..', '.data'
     }
     assert.equal(await page.getByRole('link', {name: '正式后台 ↗', exact: true}).getAttribute('href'), 'https://shushang-taoxiang.onrender.com/admin/');
     check('static sandbox has five groups and all nine modules with original formal admin link');
+    await page.evaluate(() => PeachUI.theme('dark'));
+    assert.equal(await page.locator('body').evaluate(x => Number(getComputedStyle(x).fontWeight)), 360);
+    await page.setViewportSize({width: 390, height: 900});
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+    await page.screenshot({path: path.join(output, 'admin-dark-mobile.png'), fullPage: true});
+    check('static admin uses the same dark palette and compensated typography on mobile');
     assert.deepEqual(errors, []);
     assert.deepEqual(badResponses, []);
     assert.equal(requests.some(url => /\/api\/|api\.deepseek|bigmodel\.cn/.test(url)), false);
