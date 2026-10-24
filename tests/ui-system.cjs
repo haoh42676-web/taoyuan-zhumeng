@@ -15,6 +15,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'C:/Users/Administrator/
  const routes=['home','evidence','consumer','trace','ip','operator','content','rural','service','competition','records','api'];
  try{
   await go('home');
+  await p.locator('#top-nav a[data-route="consumer"]').click();await p.locator('.compact-ai-choice summary').click();await p.locator('.recommendation-card').first().waitFor();await p.locator('#top-nav a[data-route="home"]').click();await p.locator('#top-nav a[data-route="consumer"]').click();await p.locator('.compact-ai-choice summary').click();await p.locator('.recommendation-card').first().waitFor();ok('Recommendations populate when navigating from home and after returning to products');
   for(const t of ['light','dark']){
    await theme(p,t);const tokens=await p.evaluate(()=>Array.from({length:4},(_,i)=>getComputedStyle(document.documentElement).getPropertyValue('--surface-'+i).trim()));
    const levels=tokens.map(x=>parseFloat(x.split(' ').at(-1)));for(let i=1;i<levels.length;i++)assert.ok(levels[i]-levels[i-1]>=1&&levels[i]-levels[i-1]<=3,JSON.stringify(tokens));
