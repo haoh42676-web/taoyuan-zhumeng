@@ -1,7 +1,7 @@
 /* Browser-only sandbox. No remote service, provider credentials or real records. */
 (()=>{'use strict';
  const D=window.PeachDemo,$=(s,r=document)=>r.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=v=>'¥'+Number(v||0).toFixed(2);
- const groups=[['开始工作',[['overview','工作概览']]],['事实与素材',[['materials','资料与影像'],['products','商品规格'],['batches','批次与核验码']]],['协作与表达',[['opc','OPC协作任务'],['content','内容与IP']]],['成交与服务',[['customers','客户与回访'],['orders','订单与履约'],['records','咨询与售后']]],['演示管理',[['settings','设置与数据']]]];
+ const groups=[['开始工作',[['overview','工作概览']]],['商品与批次',[['products','商品规格'],['batches','批次与核验码']]],['内容生成与审核',[['content','内容与IP'],['opc','OPC协作任务']]],['咨询与售后',[['records','咨询与售后'],['customers','客户与回访']]],['试行记录与复盘',[['orders','订单与履约']]],['资料与设置',[['materials','资料与影像'],['settings','设置与数据']]]];
  const t=(key,label,extra={})=>({key,label,...extra}),a=(key,label,extra={})=>t(key,label,{type:'textarea',full:true,...extra}),n=(key,label,extra={})=>t(key,label,{type:'number',min:0,...extra}),s=(key,label,options,extra={})=>t(key,label,{type:'select',options,...extra});
  const defs={
  materials:{label:'资料与影像',intro:'登记来源、选对类别，再人工核验。文件只保存到当前浏览器；静态站不执行AI分析。',columns:[['name','资料名称'],['category','类别'],['status','核验状态'],['entryMode','录入方式']],fields:[t('name','资料名称',{required:true}),s('category','资料类别',['调研与匿名统计','访谈摘录','IP与营销','项目方案','预算与预测','赛事材料','评审意见','影像素材','核验凭据','其他']),s('status','核验状态',['待人工核验','已完成演示核验','仅供参考']),t('sourceRef','来源与页码',{required:true}),a('body','脱敏正文 / 影像说明',{required:true}),t('batchId','关联批次号（选填）'),t('rightsNote','素材授权与隐私说明')]},

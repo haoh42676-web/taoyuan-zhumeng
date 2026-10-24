@@ -26,7 +26,7 @@ const empty=(title,copy,route)=>`<div class="empty-state"><img src="assets/web/x
 let toastTimer,opener,photoURLs=[],routeToken=0;
 function toast(text){const el=$('#toast');el.textContent=text;el.classList.add('is-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('is-visible'),3400);}
 function head(kicker,title,copy){const page=api.cms?.pages.find(x=>x.id===state.route);return `<div class="view-head"><div><div class="view-kicker">${esc(page?.kicker||kicker)}</div><h2 tabindex="-1">${esc(page?.title||title)}</h2></div><div><p>${esc(page?.intro||copy)}</p><button class="back-link" type="button" data-route="home">← 返回总览</button></div></div>`;}
-function shell(k,t,c,body,note='参考方案与演示记录均有状态标识'){const page=api.cms?.pages.find(x=>x.id===state.route);return `<div class="view-shell">${head(k,t,c)}<div class="view-bar"><p>${esc(page?.notice||note)}</p><span class="mode-label"><i></i>${api.mode==='server'?'在线服务 · 数据保存于后台':'项目服务 · 浏览器保存'}</span></div>${body}${page?.body||page?.image?`<details class="compact-details"><summary>更多说明与依据</summary>${page.image?`<img class="cms-page-image" src="${media(page.image)}" alt="补充配图">`:''}<p class="published-copy">${esc(page.body)}</p><small>${esc(page.sourceRef)}</small></details>`:''}<div class="secondary-footer"><span>${esc(api.cms?.settings?.[0]?.slogan||'数商桃乡，让好桃被看见')}</span><div>${link('我的记录','records')}${link('功能与接口','api')}${api.mode==='server'?btn('刷新最新资料','refresh-site'):''}</div></div></div>`;}
+function shell(k,t,c,body,note='参考方案与演示记录均有状态标识'){const page=api.cms?.pages.find(x=>x.id===state.route);return `<div class="view-shell">${head(k,t,c)}<div class="view-bar"><p>${esc(page?.notice||note)}</p><span class="mode-label"><i></i>${api.mode==='server'?'在线服务 · 数据保存于后台':'静态演练 · 浏览器保存'}</span></div>${body}${page?.body||page?.image?`<details class="compact-details"><summary>更多说明与依据</summary>${page.image?`<img class="cms-page-image" src="${media(page.image)}" alt="补充配图">`:''}<p class="published-copy">${esc(page.body)}</p><small>${esc(page.sourceRef)}</small></details>`:''}<div class="secondary-footer"><span>${esc(api.cms?.settings?.[0]?.slogan||'数商桃乡，让好桃被看见')}</span><div>${link('咨询与售后','service')}${state.route==='service'?link('我的记录','records'):''}${api.mode==='server'?btn('刷新最新资料','refresh-site'):''}</div></div></div>`;}
 function closeMenu(){$('.top-nav').classList.remove('is-open');$('.menu-button').setAttribute('aria-expanded','false');}
 function badge(){const count=api.snapshot().records.filter(x=>x.status==='pending').length,el=$('[data-record-count]');if(el){el.textContent=count;el.hidden=!count;}const hint=$('[data-storage-hint]');if(hint)hint.textContent=api.mode==='server'?'在线服务':api.storageAvailable?'项目服务':'暂时无法保存';}
 function homeGroup(){const categories=window.PeachHomeGroups||{buy:['consumer','trace','service'],create:['ip','content','operator'],learn:['evidence','rural','competition']};$$('.entry-card').forEach(x=>x.hidden=!(categories[state.homeGroup]||[]).includes(x.dataset.route));$$('[data-home-group]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.homeGroup===state.homeGroup)));}
@@ -89,6 +89,7 @@ function asset(src,name){const a=document.createElement('a');a.href=src;a.downlo
 async function busy(el,fn){if(el?.dataset.busy)return;const label=el?.textContent;if(el){el.dataset.busy='true';el.disabled=true;el.setAttribute('aria-busy','true');el.textContent='处理中…';}try{return await fn();}finally{if(el?.isConnected){el.disabled=false;el.removeAttribute('aria-busy');delete el.dataset.busy;el.textContent=label;}}}
 async function saveDraft(f){const data=new FormData(f);return api.request('PATCH','/api/ops/tasks/current',{action:'draft',title:data.get('title'),body:data.get('body')});}
 async function action(type,value,el){
+ if(['ai-chat-open','ai-chat-control','ai-recommend-clear','account-open','customer-service-open'].includes(type))return;
  if(window.PeachOnline && await window.PeachOnline.action(type,value,el))return;
  if(type==='close'){closeModal();return;}if(type==='ops'){state.ops=value;refresh();return;}
  if(type==='product'){product(value);return;}if(type==='consult'){consultation(value);return;}if(type==='compose'){compose(value);return;}if(type==='record'){record(value);return;}if(type==='tour-form'){tourForm();return;}if(type==='claim-form'){claimForm();return;}
@@ -155,6 +156,8 @@ if(api.mode==='server'){
  for(const n of api.cms.navigation||[])names[n.route]=n.title;
  document.addEventListener('peach:refresh',refresh);
 }
+document.addEventListener('peach:refresh',refresh);
+window.PeachCompact?.({api,state,renderers,shell,btn,link,esc,media,groups});
 render(location.hash.slice(1)||'home');
 
 })();
