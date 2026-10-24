@@ -100,6 +100,8 @@ dialog{max-height:calc(100dvh - 24px)}
 :root[data-theme=dark] .entry-card{box-shadow:var(--shadow-sm)}:root[data-theme=dark] .hero-photo img{filter:saturate(1.04)}
 :root[data-theme=dark] .top-nav.is-open{background:var(--surface-2)}:root[data-theme=dark] .ai-demo-banner,:root[data-theme=dark] .warning{background:var(--peach-soft);color:var(--peach-deep)}
 :root[data-theme=dark] .chart-bar{background:var(--accent-strong)}
+.ai-dashboard-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}.ai-dashboard-grid>.panel{min-width:0}
+@media(max-width:760px){.ai-dashboard-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:1100px){.topbar{gap:12px}.top-meta{display:none}.topbar>.theme-toggle{order:2}.top-nav{margin-left:auto}.top-actions{gap:8px}}
 @media(max-width:720px){.topbar{gap:10px}.topbar>.theme-toggle{margin-left:auto;width:42px;height:42px;min-height:42px}.topbar>.menu-button{margin-left:0}.topbar>.top-nav{order:4}.chat-message{font-size:15px}.chat-shortcuts button{font-size:12px}.top-actions .theme-toggle{width:40px;min-height:40px;height:40px}.top-actions{flex-wrap:wrap}.login-theme-toggle{right:14px;top:14px}.ui-panel-handle{cursor:default;touch-action:auto}.ui-draggable-panel{translate:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.ink-token{opacity:1;filter:none}}
