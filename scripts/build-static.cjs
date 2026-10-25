@@ -10,7 +10,7 @@ assert(out.startsWith(path.join(root, '.data') + path.sep), 'Stage must be insid
 assert(!fs.existsSync(out), 'Use a new stage directory to preserve backups');
 fs.mkdirSync(out, {recursive: true});
 const files = JSON.parse(fs.readFileSync(treeFile, 'utf8')).tree.filter(e => e.type === 'blob').map(e => e.path);
-for (const name of [...new Set([...files, 'compact-site.js', 'compact-site.css', 'static-cms.js', 'AGENTS.md', 'docs/原项目三个网址与发布对应关系.md', 'docs/实践报告版页面与维护说明.md', 'docs/UI视觉与动效规范_20261024.md', 'GitHub-Pages静态备份说明.md', 'scripts/build-static.cjs', 'tests/static-compact.cjs'])]) {
+for (const name of [...new Set([...files, 'compact-site.js', 'compact-site.css', 'journey.js', 'assets/cards/product-information.svg', 'assets/cards/in-box-guide.svg', 'static-cms.js', 'AGENTS.md', 'docs/原项目三个网址与发布对应关系.md', 'docs/实践报告版页面与维护说明.md', 'docs/UI视觉与动效规范_20261024.md', 'GitHub-Pages静态备份说明.md', 'scripts/build-static.cjs', 'tests/static-compact.cjs'])]) {
   assert(!name.startsWith('.') || name === '.nojekyll');
   if (name === 'static-content.json') continue; // Always regenerate the public snapshot below.
   const source = name === 'admin/index.html' ? 'static-admin.html' : name;
