@@ -44,7 +44,7 @@ function updateChatAccount(){
  if(!dialog)return;const user=window.PeachAccount?.user,bar=dialog.querySelector('.chat-account');const identity=user?.id||user?.account||'';if(identity!==chatIdentity){chatIdentity=identity;streamController?.abort();conversation?.replaceChildren();if(conversation)addMessage('assistant',config.welcomeMessage);}
  bar.querySelector('span').textContent=user?(user.demo?'测试体验账号 · 每日咨询有额度限制':'已登录 · 仅限项目服务咨询'):'登录后可咨询选桃、调研、IP、赛事与合作';
  bar.querySelector('button').textContent=user?'账号与退出':'登录 / 注册';
- dialog.querySelector('.chat-heading p').textContent=window.PeachAPI.mode!=='server'?'静态演练 · 本地规则':providerStatus?.chat?.configured?'项目AI辅助 · 公开事实核对':'规则客服 · 模型接口已预留';
+ dialog.querySelector('.chat-heading p').textContent=window.PeachAPI.mode!=='server'?'静态演练 · 本地规则':providerStatus?.chat?.configured?'项目AI辅助 · 公开事实核对':'公开资料答复 · 事项由运营核实';
 }
 function chat(){
   if(!config.chatEnabled)return;
@@ -58,17 +58,18 @@ function chat(){
   launcher.addEventListener('click',()=>{updateChatAccount();dialog.showModal();dialog.querySelector('#chat-message').focus();});dialog.querySelector('#ai-chat-close').addEventListener('click',()=>dialog.close());
   dialog.querySelector('#chat-account-open').addEventListener('click',()=>{dialog.close();window.PeachAccount.open();});
   window.addEventListener('peach:accountchange',updateChatAccount);window.addEventListener('peach:logincomplete',()=>{updateChatAccount();if(!dialog.open)dialog.showModal();});updateChatAccount();
+  const recovery=document.createElement('div');recovery.className='chat-recovery';recovery.hidden=true;const retry=document.createElement('button');retry.type='button';retry.id='ai-chat-retry';retry.dataset.action='ai-chat-control';retry.textContent='重新发送';retry.addEventListener('click',()=>dialog.querySelector('#ai-chat-form').requestSubmit());const handoff=document.createElement('a');handoff.href='#service';handoff.textContent='改为提交人工咨询';handoff.addEventListener('click',()=>dialog.close());recovery.append(retry,handoff);dialog.querySelector('.chat-error').after(recovery);
   dialog.querySelector('#ai-chat-clear').addEventListener('click',async()=>{if(busy)return;try{if(window.PeachAccount?.isServer&&window.PeachAccount.user)await window.PeachAccount.request('/customer/chats',{method:'DELETE'});streamController?.abort();conversation.replaceChildren();addMessage('assistant',config.welcomeMessage);}catch(e){const err=dialog.querySelector('.chat-error');err.textContent=e.message;err.hidden=false;}});
   dialog.querySelectorAll('[data-chat-prompt]').forEach(b=>b.addEventListener('click',()=>{dialog.querySelector('#chat-message').value=b.dataset.chatPrompt;dialog.querySelector('#ai-chat-form').requestSubmit();}));
   dialog.querySelector('#ai-chat-form').addEventListener('submit',async e=>{
     e.preventDefault();if(busy)return;if(!window.PeachAccount?.user){dialog.close();window.PeachAccount.open();return;}const input=dialog.querySelector('#chat-message'),message=input.value.trim();if(!message)return;
-    busy=true;const buttons=dialog.querySelectorAll('button:not(#ai-chat-close)');buttons.forEach(b=>b.disabled=true);const error=dialog.querySelector('.chat-error');error.hidden=true;
-    const productId=dialog.querySelector('#chat-product').value,recordId=dialog.querySelector('#chat-record').value.trim();input.value='';window.PeachUI.setDisclosure(dialog.querySelector('.chat-context-options'),false);if(conversation.children.length===1)conversation.replaceChildren();addMessage('user',message);
+    busy=true;const buttons=dialog.querySelectorAll('button:not(#ai-chat-close)');buttons.forEach(b=>b.disabled=true);const error=dialog.querySelector('.chat-error');error.hidden=true;recovery.hidden=true;const pending=document.createElement('p');pending.className='chat-pending';pending.setAttribute('role','status');pending.textContent='小桃满正在核对公开资料，请稍候…';dialog.querySelector('.chat-conversation').after(pending);conversation.setAttribute('aria-busy','true');
+    const productId=dialog.querySelector('#chat-product').value,recordId=dialog.querySelector('#chat-record').value.trim();input.value='';window.PeachUI.setDisclosure(dialog.querySelector('.chat-context-options'),false);if(conversation.children.length===1)conversation.replaceChildren();const previous=conversation.lastElementChild;if(!previous?.classList.contains('user')||previous.querySelector('p')?.textContent!==message)addMessage('user',message);
     try{const result=window.PeachAPI.mode==='server'?await window.PeachAccount.chat({message,productId,recordId}):answerQuestion({message,productId,products,faqs,batches,config,publicContent:window.PeachAPI.cms||{}});await addMessage('assistant',result.answer,result.sources,result.route,true);
       const last=conversation.lastElementChild;if(last){const label=document.createElement('small');label.textContent=result.label||(window.PeachAPI.mode==='server'?'已发布事实 · 规则回答':'静态演练 · 本地规则');last.append(label);
       if(result.authoritativeAnswer){const facts=document.createElement('details');facts.className='chat-authoritative';const summary=document.createElement('summary');summary.textContent='查看依据原文与适用边界';const p=document.createElement('p');p.textContent=result.authoritativeAnswer;facts.append(summary,p);last.append(facts);}}}
-    catch(e){error.textContent=e.message||'暂时连接失败，请稍后重试。';error.hidden=false;input.value=message;}
-    finally{busy=false;buttons.forEach(b=>b.disabled=false);input.focus();}
+    catch(e){error.textContent=e.message||'暂时连接失败，问题已保留，可重新发送或转人工咨询。';error.hidden=false;input.value=message;recovery.hidden=false;}
+    finally{busy=false;pending.remove();conversation.removeAttribute('aria-busy');buttons.forEach(b=>b.disabled=false);input.focus();}
   });
 }
 try{
